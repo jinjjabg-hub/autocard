@@ -167,7 +167,14 @@ const base = () => S.langs[0];
 const $ = id => document.getElementById(id);
 const esc = acEsc;
 function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2600); }
-function copyOf(l) { S.copy[l] = S.copy[l] || { slogan: '', referral: '' }; return S.copy[l]; }
+// 명함 본문 문구 4개 — 순서가 곧 명함에 나오는 순서
+const COPY_FIELDS = [
+  ['slogan', '한 줄 소개', '명함 맨 위에 들어가요', 64],
+  ['work', '하는 일', '무슨 일을 어떻게 하는지', 96],
+  ['help', '이런 분을 돕습니다', '어떤 상황의 누구에게 도움이 되는지', 96],
+  ['referral', '이런 분을 소개해주세요', '리퍼럴 문구', 84],
+];
+function copyOf(l) { S.copy[l] = Object.assign({ slogan: '', work: '', help: '', referral: '' }, S.copy[l]); return S.copy[l]; }
 function onlyLangs(o) { const r = {}; S.langs.forEach(l => { if (o[l] !== undefined) r[l] = o[l]; }); return r; }   // 뺀 언어의 값은 저장하지 않음
 function cardData() {   // 렌더러·Firestore에 넘기는 명함 데이터 (스펙의 autocards 구조)
   return {
@@ -245,7 +252,7 @@ const VIEWS = {
   4() {
     const c = copyOf(base());
     return `<h2>어떤 일을 하시나요?</h2>
-      <p class="lead">편하게 말하듯 적으면 AI가 명함용 한 줄 소개와 리퍼럴 문구로 다듬어요.</p>
+      <p class="lead">편하게 말하듯 적으면 AI가 명함 문구 4개(한 줄 소개·하는 일·돕는 분·소개받고 싶은 분)로 다듬어요.</p>
       <label class="f">Q1. 어떤 일을 하나요?</label>
       <textarea class="t" data-ans="work" placeholder="예: 강남·서초 상가 매매와 임대를 중개해요. 권리금 협상을 특히 잘해요.">${esc(S.answers.work)}</textarea>
       <label class="f">Q2. 주로 누구를 돕나요?</label>
@@ -254,10 +261,11 @@ const VIEWS = {
       <textarea class="t" data-ans="referral" placeholder="예: 가게 이전·확장을 고민하는 사장님, 상가를 팔려는 건물주">${esc(S.answers.referral)}</textarea>
       <button type="button" class="btn ai" id="aiBtn">✨ AI 초안 만들기</button>
       <div class="err" id="aiErr"></div>
-      <label class="f">한 줄 소개 <small>· 명함 맨 위에 들어가요</small></label>
-      <textarea class="t" id="slogan" style="min-height:64px" placeholder="AI 초안을 만들거나 직접 적어주세요">${esc(c.slogan)}</textarea>
-      <label class="f">이런 분을 소개해주세요 <small>· 리퍼럴 문구</small></label>
-      <textarea class="t" id="refcopy" placeholder="AI 초안을 만들거나 직접 적어주세요">${esc(c.referral)}</textarea>
+      <div class="card" style="margin-top:18px"><b style="font-size:14px">명함에 들어갈 문구</b>
+        <p class="hint" style="margin-top:4px">AI 초안이 들어오면 마음에 들게 고쳐주세요. 이 순서대로 명함에 나와요.</p>
+        ${COPY_FIELDS.map(([k, label, sub, h]) => `<label class="f">${label} <small>· ${sub}</small></label>
+        <textarea class="t" data-copy="${k}" style="min-height:${h}px" placeholder="AI 초안을 만들거나 직접 적어주세요">${esc(c[k])}</textarea>`).join('')}
+      </div>
       <div class="err" id="err"></div>`;
   },
   5() {
@@ -301,8 +309,7 @@ const VIEWS = {
         ${extras.map(l => `<div class="trlang"><b>${AC_LANGS[l]}</b>
           <label class="f">직함</label><input class="t" data-tr="title" data-l="${l}" value="${esc(S.title[l] || '')}">
           <label class="f">회사명</label><input class="t" data-tr="company" data-l="${l}" value="${esc(S.company[l] || '')}">
-          <label class="f">한 줄 소개</label><textarea class="t" data-tr="slogan" data-l="${l}">${esc(copyOf(l).slogan)}</textarea>
-          <label class="f">리퍼럴 문구</label><textarea class="t" data-tr="referral" data-l="${l}">${esc(copyOf(l).referral)}</textarea></div>`).join('')}
+          ${COPY_FIELDS.map(([k, label]) => `<label class="f">${label}</label><textarea class="t" data-tr="${k}" data-l="${l}">${esc(copyOf(l)[k])}</textarea>`).join('')}</div>`).join('')}
         <button type="button" class="btn ghost wide" id="retrBtn" style="margin-top:14px">원문 기준으로 다시 번역</button></details>` : ''}
       <div class="card">
         <div class="pricebox"><span>결제 금액 · ${S.langs.length}개 언어</span><b>${acWon(acPrice(S.langs))}</b></div>
@@ -372,8 +379,7 @@ const AFTER = {
   },
   4() {
     document.querySelectorAll('[data-ans]').forEach(t => t.oninput = () => { S.answers[t.dataset.ans] = t.value; save(); });
-    $('slogan').oninput = e => { copyOf(base()).slogan = e.target.value; save(); };
-    $('refcopy').oninput = e => { copyOf(base()).referral = e.target.value; save(); };
+    document.querySelectorAll('[data-copy]').forEach(t => t.oninput = () => { copyOf(base())[t.dataset.copy] = t.value; save(); });
     $('aiBtn').onclick = aiDraft;
   },
   5() {
@@ -485,9 +491,9 @@ async function aiDraft() {
   const btn = $('aiBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 문구 만드는 중…'; $('aiErr').textContent = '';
   try {
     const r = await callWorker('/autocard/draft', { lang: base(), answers: a, name: S.name[base()] || '', title: S.title[base()] || '', company: S.company[base()] || '' });
-    const c = copyOf(base()); c.slogan = r.slogan || c.slogan; c.referral = r.referral || c.referral;
+    const c = copyOf(base()); COPY_FIELDS.forEach(([k]) => { if (r[k]) c[k] = r[k]; });
     save();
-    if (S.step === 4) { $('slogan').value = c.slogan; $('refcopy').value = c.referral; }
+    if (S.step === 4) document.querySelectorAll('[data-copy]').forEach(t => { t.value = c[t.dataset.copy]; });
     toast('초안이 들어갔어요. 마음에 들게 고쳐 쓰세요');
   } catch (e) {
     if ($('aiErr')) $('aiErr').textContent = 'AI 초안을 못 만들었어요: ' + e.message + ' (직접 적어도 돼요)';
@@ -500,7 +506,8 @@ async function aiDraft() {
 async function translateAll(force) {
   const extras = S.langs.slice(1); if (!extras.length) return;
   const b = base(), c = copyOf(b);
-  const texts = { title: S.title[b] || '', company: S.company[b] || '', slogan: c.slogan || '', referral: c.referral || '' };
+  const texts = { title: S.title[b] || '', company: S.company[b] || '' };
+  COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || ''; });
   const key = JSON.stringify([texts, extras]);
   const st = $('trStatus');
   if (!force && S.trKey === key) return;
@@ -510,7 +517,7 @@ async function translateAll(force) {
     for (const l of extras) {
       const x = r[l]; if (!x) continue;
       S.title[l] = x.title; S.company[l] = x.company || texts.company;
-      S.copy[l] = { slogan: x.slogan, referral: x.referral };
+      S.copy[l] = {}; COPY_FIELDS.forEach(([k]) => { S.copy[l][k] = x[k] || ''; });
     }
     S.trKey = key; save();
     if (S.step === 7 && S.status === 'draft') { render(); toast('번역됐어요. 언어 버튼으로 확인해보세요'); }

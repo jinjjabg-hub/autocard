@@ -7,12 +7,12 @@ const AC_LANGS = {
 
 // 명함 화면의 고정 문구(버튼 이름 등) — 사용자가 쓴 문구가 아니므로 AI 번역 없이 미리 준비
 const AC_UI = {
-  ko: { call: '전화', sms: '문자', email: '이메일', save: '카드북에 저장', saveSub: '받은 명함을 명함첩에 한 번에 보관해요', contact: '연락처 저장', referral: '이런 분을 소개해주세요', share: '명함 공유', qr: 'QR 코드', make: '나도 5,900원으로 명함 만들기', copied: '주소가 복사됐어요' },
-  en: { call: 'Call', sms: 'Text', email: 'Email', save: 'Save to CardBook', saveSub: 'Keep every card you receive in one place', contact: 'Save contact', referral: 'Who I would love to meet', share: 'Share', qr: 'QR code', make: 'Make your own card for ₩5,900', copied: 'Link copied' },
-  ja: { call: '電話', sms: 'SMS', email: 'メール', save: 'CardBookに保存', saveSub: 'もらった名刺をまとめて保管', contact: '連絡先を保存', referral: 'こんな方をご紹介ください', share: '共有', qr: 'QRコード', make: '5,900ウォンで名刺をつくる', copied: 'コピーしました' },
-  zh: { call: '电话', sms: '短信', email: '邮件', save: '保存到CardBook', saveSub: '收到的名片一键保存', contact: '保存联系人', referral: '请为我介绍这样的人', share: '分享', qr: '二维码', make: '5,900韩元制作我的名片', copied: '已复制' },
-  vi: { call: 'Gọi', sms: 'Nhắn tin', email: 'Email', save: 'Lưu vào CardBook', saveSub: 'Lưu mọi danh thiếp ở một nơi', contact: 'Lưu danh bạ', referral: 'Xin giới thiệu giúp tôi', share: 'Chia sẻ', qr: 'Mã QR', make: 'Tạo danh thiếp chỉ 5.900₩', copied: 'Đã sao chép' },
-  mn: { call: 'Залгах', sms: 'Мессеж', email: 'И-мэйл', save: 'CardBook-д хадгалах', saveSub: 'Нэрийн хуудсаа нэг дор хадгална', contact: 'Холбоо барих хадгалах', referral: 'Ийм хүмүүсийг танилцуулна уу', share: 'Хуваалцах', qr: 'QR код', make: '5,900₩-өөр нэрийн хуудас хийх', copied: 'Хуулсан' },
+  ko: { work: '하는 일', help: '이런 분을 돕습니다', call: '전화', sms: '문자', email: '이메일', save: '카드북에 저장', saveSub: '받은 명함을 명함첩에 한 번에 보관해요', contact: '연락처 저장', referral: '이런 분을 소개해주세요', share: '명함 공유', qr: 'QR 코드', make: '나도 5,900원으로 명함 만들기', copied: '주소가 복사됐어요' },
+  en: { work: 'What I do', help: 'Who I help', call: 'Call', sms: 'Text', email: 'Email', save: 'Save to CardBook', saveSub: 'Keep every card you receive in one place', contact: 'Save contact', referral: 'Who I would love to meet', share: 'Share', qr: 'QR code', make: 'Make your own card for ₩5,900', copied: 'Link copied' },
+  ja: { work: '仕事内容', help: 'こんな方をお手伝いします', call: '電話', sms: 'SMS', email: 'メール', save: 'CardBookに保存', saveSub: 'もらった名刺をまとめて保管', contact: '連絡先を保存', referral: 'こんな方をご紹介ください', share: '共有', qr: 'QRコード', make: '5,900ウォンで名刺をつくる', copied: 'コピーしました' },
+  zh: { work: '我的工作', help: '我能帮助的人', call: '电话', sms: '短信', email: '邮件', save: '保存到CardBook', saveSub: '收到的名片一键保存', contact: '保存联系人', referral: '请为我介绍这样的人', share: '分享', qr: '二维码', make: '5,900韩元制作我的名片', copied: '已复制' },
+  vi: { work: 'Công việc của tôi', help: 'Tôi giúp ai', call: 'Gọi', sms: 'Nhắn tin', email: 'Email', save: 'Lưu vào CardBook', saveSub: 'Lưu mọi danh thiếp ở một nơi', contact: 'Lưu danh bạ', referral: 'Xin giới thiệu giúp tôi', share: 'Chia sẻ', qr: 'Mã QR', make: 'Tạo danh thiếp chỉ 5.900₩', copied: 'Đã sao chép' },
+  mn: { work: 'Миний ажил', help: 'Би хэнд тусалдаг вэ', call: 'Залгах', sms: 'Мессеж', email: 'И-мэйл', save: 'CardBook-д хадгалах', saveSub: 'Нэрийн хуудсаа нэг дор хадгална', contact: 'Холбоо барих хадгалах', referral: 'Ийм хүмүүсийг танилцуулна уу', share: 'Хуваалцах', qr: 'QR код', make: '5,900₩-өөр нэрийн хуудас хийх', copied: 'Хуулсан' },
 };
 
 // ===== 색상 =====
@@ -87,10 +87,14 @@ function acPick(field, lang, card) {
   return field[lang] || field[(card.langs || [])[0]] || Object.values(field).find(Boolean) || '';
 }
 function acView(card, lang) {
-  const copy = (card.copy && (card.copy[lang] || card.copy[card.langs[0]])) || {};
+  const base = (card.langs || [])[0];
+  const cur = (card.copy && card.copy[lang]) || {}, org = (card.copy && card.copy[base]) || {}, ans = card.answers || {};
+  // 필드별로: 이 언어 문구 → 기본 언어 문구 → 질문 답변 원문 순으로 채운다
+  // (work·help가 없던 예전 명함도 답변 원문이 대신 나와서 섹션이 비지 않음)
+  const pick = (k, a) => cur[k] || org[k] || (a ? ans[a] || '' : '');
   return {
     name: acPick(card.name, lang, card), title: acPick(card.title, lang, card), company: acPick(card.company, lang, card),
-    slogan: copy.slogan || '', referral: copy.referral || '',
+    slogan: pick('slogan'), work: pick('work', 'work'), help: pick('help', 'customer'), referral: pick('referral', 'referral'),
     phone: card.phone || '', email: card.email || '', links: (card.links || []).filter(l => l && l.url),
     profile: (card.images || {}).profile || '', second: (card.images || {}).second || '',
     secondType: (card.images || {}).secondType || 'hero',
@@ -104,13 +108,18 @@ function acSafeUrl(u) {
   return u;
 }
 
-// ===== 공통 블록 (템플릿이 순서·배치만 바꿔서 조합) =====
+// ===== 공통 블록 — 모든 템플릿이 같은 블록을 쓰고, 모양은 card.css의 .tpl-* 가 템플릿별로 다르게 입힌다 =====
+const AC_SVG = (d, size = 20) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const AC_ICON = {
-  call: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
-  sms: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-  email: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>',
-  link: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
-  book: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/><path d="M6.5 17A2.5 2.5 0 0 0 4 19.5 2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>',
+  call: AC_SVG('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>'),
+  sms: AC_SVG('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+  email: AC_SVG('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>'),
+  link: AC_SVG('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>', 16),
+  book: AC_SVG('<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/><path d="M6.5 17A2.5 2.5 0 0 0 4 19.5 2.5 2.5 0 0 0 6.5 22H20v-5"/>', 24),
+  contact: AC_SVG('<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>'),
+  share: AC_SVG('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>'),
+  qr: AC_SVG('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M17 20h4v-3"/>'),
+  chevron: AC_SVG('<path d="m9 18 6-6-6-6"/>', 16),
 };
 
 function acAvatar(v, cls) {
@@ -123,84 +132,89 @@ function acLogo(v) { return v.second && v.secondType === 'logo' ? `<img class="a
 function acHeroBg(v) { return v.second && v.secondType === 'hero' ? `<div class="ac-hero-img" style="background-image:url('${acEsc(v.second)}')"></div><div class="ac-hero-veil"></div>` : ''; }
 function acRole(v) { return [v.title, v.company].filter(Boolean).map(acEsc).join(' · '); }
 
-function acActions(v) {
+// 이름 바로 아래 원형 아이콘 한 줄 — 전화·문자·이메일
+function acContact(v) {
   const b = [];
   if (v.phone) {
     const tel = v.phone.replace(/[^0-9+]/g, '');
-    b.push(`<a class="ac-act" href="tel:${tel}">${AC_ICON.call}<span>${v.ui.call}</span></a>`);
-    b.push(`<a class="ac-act" href="sms:${tel}">${AC_ICON.sms}<span>${v.ui.sms}</span></a>`);
+    b.push(`<a class="ac-ci" href="tel:${tel}" aria-label="${v.ui.call}" title="${v.ui.call}">${AC_ICON.call}</a>`);
+    b.push(`<a class="ac-ci" href="sms:${tel}" aria-label="${v.ui.sms}" title="${v.ui.sms}">${AC_ICON.sms}</a>`);
   }
-  if (v.email) b.push(`<a class="ac-act" href="mailto:${acEsc(v.email)}">${AC_ICON.email}<span>${v.ui.email}</span></a>`);
-  return b.length ? `<div class="ac-actions">${b.join('')}</div>` : '';
+  if (v.email) b.push(`<a class="ac-ci" href="mailto:${acEsc(v.email)}" aria-label="${v.ui.email}" title="${v.ui.email}">${AC_ICON.email}</a>`);
+  return b.length ? `<div class="ac-contact">${b.join('')}</div>` : '';
+}
+// 본문 섹션: 하는 일 → 이런 분을 돕습니다 → 이런 분을 소개해주세요
+function acSections(v) {
+  const list = [['work', v.ui.work, v.work], ['help', v.ui.help, v.help], ['referral', v.ui.referral, v.referral]].filter(x => x[2]);
+  return list.map(([k, title, text], i) => `<section class="ac-sec ac-sec-${k}">
+      <h3 class="ac-h"><span class="ac-num">${String(i + 1).padStart(2, '0')}</span><span class="ac-ht">${title}</span></h3>
+      <p>${acEsc(text)}</p></section>`).join('');
 }
 function acSaveBtn(v) {
   return `<button type="button" class="ac-save" data-ac="save">${AC_ICON.book}<span class="ac-save-t"><b>${v.ui.save}</b><small>${v.ui.saveSub}</small></span></button>`;
 }
-function acReferral(v) {
-  if (!v.referral) return '';
-  return `<section class="ac-ref"><h3>${v.ui.referral}</h3><p>${acEsc(v.referral)}</p></section>`;
-}
 function acLinks(v) {
   if (!v.links.length) return '';
-  return `<div class="ac-links">${v.links.map(l => `<a href="${acEsc(acSafeUrl(l.url))}" target="_blank" rel="noopener">${AC_ICON.link}<span>${acEsc(l.label || l.url)}</span></a>`).join('')}</div>`;
+  return `<nav class="ac-links">${v.links.map(l => `<a href="${acEsc(acSafeUrl(l.url))}" target="_blank" rel="noopener">${AC_ICON.link}<span>${acEsc(l.label || l.url)}</span>${AC_ICON.chevron}</a>`).join('')}</nav>`;
 }
+// 맨 아래 작은 아이콘 3개 — 연락처 저장·공유·QR
 function acTools(v) {
-  return `<div class="ac-tools">
-    <button type="button" data-ac="vcf">${v.ui.contact}</button>
-    <button type="button" data-ac="share">${v.ui.share}</button>
-    <button type="button" data-ac="qr">${v.ui.qr}</button>
-  </div>`;
+  const t = [['vcf', AC_ICON.contact, v.ui.contact], ['share', AC_ICON.share, v.ui.share], ['qr', AC_ICON.qr, v.ui.qr]];
+  return `<div class="ac-tools">${t.map(([k, ic, lb]) => `<button type="button" data-ac="${k}" aria-label="${lb}"><i>${ic}</i><span>${lb}</span></button>`).join('')}</div>`;
 }
 function acFooter(v) { return `<a class="ac-make" href="../?from=card" data-ac="make">${v.ui.make} →</a>`; }
-function acBody(v) {
-  return `${v.slogan ? `<p class="ac-slogan">${acEsc(v.slogan)}</p>` : ''}
-    ${acActions(v)}${acSaveBtn(v)}${acReferral(v)}${acLinks(v)}${acTools(v)}${acFooter(v)}`;
+function acBody(v, opt = {}) {
+  return `<main class="ac-main">
+    ${v.slogan && !opt.noSlogan ? `<p class="ac-slogan">${acEsc(v.slogan)}</p>` : ''}
+    <div class="ac-secs">${acSections(v)}</div>
+    ${acSaveBtn(v)}${acLinks(v)}${acTools(v)}${acFooter(v)}
+  </main>`;
 }
 
-// ===== 템플릿 6종 =====
+// ===== 템플릿 6종 — 상단 배치가 다르고, 본문 모양은 CSS(.tpl-*)가 다르게 입힌다 =====
 const AC_TPL = {
-  // 1. 미니멀 센터형 — 바탕색 위 가운데 정렬, 둥근 프로필
+  // 1. 미니멀 센터형 — 가운데 정렬, 얇은 구분선, 넉넉한 여백
   minimal(v) {
     return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div><i class="ac-rule"></i></div>
-      <main class="ac-main">${acBody(v)}</main>`;
+      <div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
+      ${acBody(v)}`;
   },
-  // 2. 대각선 스플릿형 — 메인색 면과 사진이 대각선으로 나뉨
+  // 2. 대각선 스플릿형 — 메인색 면과 사진이 대각선으로 나뉨, 본문은 모서리를 사선으로 자른 카드
   split(v) {
     return `<header class="ac-hero">${acHeroBg(v)}
         <div class="ac-split-photo">${v.profile ? `<img src="${acEsc(v.profile)}" alt="">` : `<div class="ac-initial">${acEsc((v.name || '?').charAt(0))}</div>`}</div>
-        <div class="ac-id">${acLogo(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div></div>
+        <div class="ac-id">${acLogo(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
       </header>
-      <main class="ac-main">${acBody(v)}</main>`;
+      ${acBody(v)}`;
   },
-  // 3. 플로팅 배지형 — 히어로 위에 떠 있는 카드 + 원형 배지 사진
+  // 3. 플로팅 배지형 — 히어로 위에 떠 있는 카드 + 원형 배지 사진, 섹션도 떠 있는 둥근 카드
   badge(v) {
     return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-float"><div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div></div></div>
-      <main class="ac-main">${acBody(v)}</main>`;
+      <div class="ac-float"><div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
+      ${acBody(v)}`;
   },
-  // 4. 매거진 에디토리얼형 — 큰 세로 사진 + 세리프 이름
+  // 4. 매거진 에디토리얼형 — 큰 세로 사진 + 세리프 이름, 번호 붙은 섹션
   magazine(v) {
     return `<header class="ac-hero">${acHeroBg(v)}
         <div class="ac-mag-top"><span>${acEsc(v.company || v.title)}</span>${acLogo(v)}</div>
-        ${v.profile ? `<img class="ac-mag-photo" src="${acEsc(v.profile)}" alt="">` : ''}
+        ${v.profile ? `<img class="ac-mag-photo" src="${acEsc(v.profile)}" alt="">` : `<div class="ac-mag-cover"><span>${acEsc((v.name || '?').trim().charAt(0))}</span></div>`}
       </header>
-      <div class="ac-id"><div class="ac-kicker">${acEsc(v.title)}</div><h1>${acEsc(v.name)}</h1><i class="ac-rule"></i></div>
-      <main class="ac-main">${acBody(v)}</main>`;
+      <div class="ac-id"><div class="ac-kicker">${acEsc(v.title)}</div><h1>${acEsc(v.name)}</h1>${acContact(v)}<i class="ac-rule"></i></div>
+      ${acBody(v)}`;
   },
-  // 5. 다크 프리미엄형 — 어두운 바탕 + 강조색 테두리
+  // 5. 다크 프리미엄형 — 어두운 면 + 강조색 얇은 테두리
   dark(v) {
     return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div></div>
-      <main class="ac-main">${acBody(v)}</main>`;
+      <div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
+      ${acBody(v)}`;
   },
-  // 6. 컬러 블록형 — 메인색 블록 / 강조색 블록 / 바탕색
+  // 6. 컬러 블록형 — 섹션마다 main/sub/point 색 면을 번갈아 꽉 채움
   block(v) {
     return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}
-        <div class="ac-id">${acAvatar(v, 'ac-photo')}<div><h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div></div></div>
+        <div class="ac-id">${acAvatar(v, 'ac-photo')}<div><h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
       </header>
       ${v.slogan ? `<div class="ac-band"><p>${acEsc(v.slogan)}</p></div>` : ''}
-      <main class="ac-main">${acBody({ ...v, slogan: '' })}</main>`;
+      ${acBody(v, { noSlogan: true })}`;
   },
 };
 
@@ -232,7 +246,8 @@ function acVcf(card, lang, url) {
   if (v.email) lines.push('EMAIL:' + e(v.email));
   if (url) lines.push('URL:' + url);
   v.links.forEach(l => lines.push('URL:' + acSafeUrl(l.url)));
-  if (v.slogan) lines.push('NOTE:' + e(v.slogan));
+  const note = [v.slogan, v.work].filter(Boolean).join('\n');
+  if (note) lines.push('NOTE:' + e(note));
   lines.push('END:VCARD');
   return lines.join('\r\n');
 }

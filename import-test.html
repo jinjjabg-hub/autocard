@@ -30,9 +30,13 @@
      다 읽으면 <b>결과 복사</b>를 눌러 Claude에게 붙여넣어 주세요. (같은 이미지는 캐시돼서 다시 읽어도 횟수가 줄지 않아요)</p>
   <button class="btn" id="pick">이미지 고르기 (여러 장)</button>
   <button class="btn ghost" id="copy" disabled>결과 복사</button>
+  <button class="btn ghost" id="login">관리자 로그인(횟수 제한 없음)</button> <span id="who" style="font-size:13px;color:#555"></span>
   <input type="file" id="files" accept="image/*" multiple hidden>
   <div id="list"></div>
 </div>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
 <script src="assets/common.js"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -51,6 +55,10 @@ function resize(file, max) {
 async function sha(b64) { const b = atob(b64), a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i);
   return [...new Uint8Array(await crypto.subtle.digest('SHA-256', a))].map(x => x.toString(16).padStart(2, '0')).join(''); }
 function devId() { try { let d = localStorage.getItem('autocard_device'); if (!d) { d = crypto.randomUUID(); localStorage.setItem('autocard_device', d); } return d; } catch (e) { return ''; } }
+// 관리자로 로그인해 두면 하루 5회 제한 없이 테스트할 수 있다(서버가 계정을 직접 확인)
+let AUTH = null; try { AUTH = acInitFirebase().auth; AUTH.onAuthStateChanged(u => { $('who').textContent = u ? u.email + ' 로그인됨' : ''; }); } catch (e) {}
+$('login').onclick = () => AUTH && AUTH.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert(e.message));
+const idTok = async () => { try { return AUTH && AUTH.currentUser ? await AUTH.currentUser.getIdToken() : ''; } catch (e) { return ''; } };
 $('pick').onclick = () => $('files').click();
 $('files').onchange = async e => {
   for (const f of e.target.files) {
@@ -59,7 +67,7 @@ $('files').onchange = async e => {
     try {
       const r = await resize(f, 1600), b64 = r.url.split(',')[1];
       const res = await fetch(AC_WORKER + '/autocard/import', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: b64, mediaType: 'image/jpeg', hash: await sha(b64), deviceId: devId() }) });
+        body: JSON.stringify({ image: b64, mediaType: 'image/jpeg', hash: await sha(b64), deviceId: devId(), idToken: await idTok() }) });
       const d = await res.json(), sec = ((performance.now() - t0) / 1000).toFixed(1);
       results.push({ file: f.name, seconds: +sec, status: res.status, result: d });
       const rows = ['name', 'title', 'company', 'phone', 'phone2', 'email', 'website', 'address', 'slogan', 'specialties', 'referral', 'career', 'chapter', 'sns']

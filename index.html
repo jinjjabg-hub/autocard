@@ -246,7 +246,7 @@ const VIEWS = {
     return `${IN_APP ? `<div class="inapp">카카오톡·인스타 안에서 열렸어요. 발행할 때 Google 로그인이 필요해서, 오른쪽 위 메뉴 → <b>다른 브라우저(Safari·Chrome)로 열기</b> 후 시작하는 걸 추천해요.</div>` : ''}
       <h2>어떻게 시작할까요?</h2>
       <p class="lead">5,900원으로 만드는 디지털 명함. 받은 사람은 카드북에 바로 저장할 수 있어요.</p>
-      ${IMP.stage === 'error' ? `<div class="err">${esc(IMP.error)}</div>` : ''}
+      ${IMP.stage === 'error' ? `<div class="err">${esc(IMP.error)}</div>${IMP.limited ? '<button type="button" class="btn ghost" id="adminLogin" style="margin-top:8px">관리자라면 Google 로그인 후 다시 시도</button>' : ''}` : ''}
       <button type="button" class="startcard rec" id="startImport"><b>기존 명함 이미지로 시작 <em>추천 · 1분</em></b>
         <span>갖고 계신 명함·홍보 이미지 한 장만 올리면 이름·연락처·전문분야·사진이 자동으로 채워져요. 카톡에 저장된 이미지도 돼요.</span></button>
       <button type="button" class="startcard" id="startManual"><b>처음부터 입력</b><span>질문에 답하면서 하나씩 채워요. 5분 정도 걸려요.</span></button>`;
@@ -441,6 +441,7 @@ const AFTER = {
     if (IMP.stage === 'photo') return setupCrop();
     if (IMP.stage === 'reading') return;
     $('startImport').onclick = () => { $('importInput').value = ''; $('importInput').click(); };
+    if ($('adminLogin')) $('adminLogin').onclick = adminLogin;
     $('startManual').onclick = () => { S.mode = 'manual'; S.step = 1; IMP.stage = null; save(); render(); };
   },
   4() {
@@ -608,6 +609,19 @@ function deviceId() {
     return id;
   } catch (e) { return ''; }
 }
+// 로그인돼 있으면(카드북과 같은 로그인) 토큰을 함께 보냄 → 관리자 계정은 하루 제한 없음. 서버가 직접 확인한다
+async function currentIdToken() {
+  try {
+    const { auth } = fb();
+    const u = auth.currentUser || await new Promise(r => { const un = auth.onAuthStateChanged(x => { un(); r(x); }); setTimeout(() => r(null), 2500); });
+    return u ? await u.getIdToken() : '';
+  } catch (e) { return ''; }
+}
+async function adminLogin() {
+  try { const { auth } = fb(); await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    toast('로그인됐어요. 이미지를 다시 골라주세요'); IMP.stage = null; render(); }
+  catch (e) { if (e.code !== 'auth/popup-closed-by-user') toast('로그인 실패: ' + (e.message || e.code)); }
+}
 async function sha256Hex(b64) {
   const bin = atob(b64), bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
@@ -624,13 +638,13 @@ $('importInput').onchange = async e => {
   S.mode = 'import'; IMP.stage = 'reading'; IMP.t0 = Date.now(); render();
   try {
     const b64 = IMP.img.split(',')[1];
-    const r = await callWorker('/autocard/import', { image: b64, mediaType: 'image/jpeg', hash: await sha256Hex(b64), deviceId: deviceId() }, 60000);
+    const r = await callWorker('/autocard/import', { image: b64, mediaType: 'image/jpeg', hash: await sha256Hex(b64), deviceId: deviceId(), idToken: await currentIdToken() }, 60000);
     IMP.result = r;
     applyImport(r);
     if (r.photoBox) { IMP.stage = 'photo'; IMP.crop = initialCrop(r.photoBox); render(); }
     else { finishImport(); }
   } catch (err) {
-    IMP.stage = 'error'; IMP.error = '명함을 읽지 못했어요: ' + err.message; render();
+    IMP.stage = 'error'; IMP.error = '명함을 읽지 못했어요: ' + err.message; IMP.limited = /하루/.test(err.message); render();
   }
 };
 function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; }); }

@@ -7,12 +7,12 @@ const AC_LANGS = {
 
 // 명함 화면의 고정 문구(버튼 이름 등) — 사용자가 쓴 문구가 아니므로 AI 번역 없이 미리 준비
 const AC_UI = {
-  ko: { specialties: '전문분야', chapter: 'BNI {c} 챕터', work: '하는 일', help: '이런 분을 돕습니다', call: '전화', sms: '문자', email: '이메일', save: '카드북에 저장', saveSub: '받은 명함을 명함첩에 한 번에 보관해요', contact: '연락처 저장', referral: '이런 분을 소개해주세요', share: '명함 공유', qr: 'QR 코드', make: '나도 5,900원으로 명함 만들기', copied: '주소가 복사됐어요' },
-  en: { specialties: 'Specialties', chapter: 'BNI {c} Chapter', work: 'What I do', help: 'Who I help', call: 'Call', sms: 'Text', email: 'Email', save: 'Save to CardBook', saveSub: 'Keep every card you receive in one place', contact: 'Save contact', referral: 'Who I would love to meet', share: 'Share', qr: 'QR code', make: 'Make your own card for ₩5,900', copied: 'Link copied' },
-  ja: { specialties: '専門分野', chapter: 'BNI {c} チャプター', work: '仕事内容', help: 'こんな方をお手伝いします', call: '電話', sms: 'SMS', email: 'メール', save: 'CardBookに保存', saveSub: 'もらった名刺をまとめて保管', contact: '連絡先を保存', referral: 'こんな方をご紹介ください', share: '共有', qr: 'QRコード', make: '5,900ウォンで名刺をつくる', copied: 'コピーしました' },
-  zh: { specialties: '专业领域', chapter: 'BNI {c} 分会', work: '我的工作', help: '我能帮助的人', call: '电话', sms: '短信', email: '邮件', save: '保存到CardBook', saveSub: '收到的名片一键保存', contact: '保存联系人', referral: '请为我介绍这样的人', share: '分享', qr: '二维码', make: '5,900韩元制作我的名片', copied: '已复制' },
-  vi: { specialties: 'Lĩnh vực chuyên môn', chapter: 'BNI Chapter {c}', work: 'Công việc của tôi', help: 'Tôi giúp ai', call: 'Gọi', sms: 'Nhắn tin', email: 'Email', save: 'Lưu vào CardBook', saveSub: 'Lưu mọi danh thiếp ở một nơi', contact: 'Lưu danh bạ', referral: 'Xin giới thiệu giúp tôi', share: 'Chia sẻ', qr: 'Mã QR', make: 'Tạo danh thiếp chỉ 5.900₩', copied: 'Đã sao chép' },
-  mn: { specialties: 'Мэргэшсэн чиглэл', chapter: 'BNI {c} бүлэг', work: 'Миний ажил', help: 'Би хэнд тусалдаг вэ', call: 'Залгах', sms: 'Мессеж', email: 'И-мэйл', save: 'CardBook-д хадгалах', saveSub: 'Нэрийн хуудсаа нэг дор хадгална', contact: 'Холбоо барих хадгалах', referral: 'Ийм хүмүүсийг танилцуулна уу', share: 'Хуваалцах', qr: 'QR код', make: '5,900₩-өөр нэрийн хуудас хийх', copied: 'Хуулсан' },
+  ko: { connect: '연락하기', saveShort: '카드북', specialties: '전문분야', chapter: 'BNI {c} 챕터', work: '하는 일', help: '이런 분을 돕습니다', call: '전화', sms: '문자', email: '이메일', save: '카드북에 저장', saveSub: '받은 명함을 명함첩에 한 번에 보관해요', contact: '연락처 저장', referral: '이런 분을 소개해주세요', share: '명함 공유', qr: 'QR 코드', make: '나도 5,900원으로 명함 만들기', copied: '주소가 복사됐어요' },
+  en: { connect: 'Get in touch', saveShort: 'CardBook', specialties: 'Specialties', chapter: 'BNI {c} Chapter', work: 'What I do', help: 'Who I help', call: 'Call', sms: 'Text', email: 'Email', save: 'Save to CardBook', saveSub: 'Keep every card you receive in one place', contact: 'Save contact', referral: 'Who I would love to meet', share: 'Share', qr: 'QR code', make: 'Make your own card for ₩5,900', copied: 'Link copied' },
+  ja: { connect: '連絡先', saveShort: 'CardBook', specialties: '専門分野', chapter: 'BNI {c} チャプター', work: '仕事内容', help: 'こんな方をお手伝いします', call: '電話', sms: 'SMS', email: 'メール', save: 'CardBookに保存', saveSub: 'もらった名刺をまとめて保管', contact: '連絡先を保存', referral: 'こんな方をご紹介ください', share: '共有', qr: 'QRコード', make: '5,900ウォンで名刺をつくる', copied: 'コピーしました' },
+  zh: { connect: '联系方式', saveShort: 'CardBook', specialties: '专业领域', chapter: 'BNI {c} 分会', work: '我的工作', help: '我能帮助的人', call: '电话', sms: '短信', email: '邮件', save: '保存到CardBook', saveSub: '收到的名片一键保存', contact: '保存联系人', referral: '请为我介绍这样的人', share: '分享', qr: '二维码', make: '5,900韩元制作我的名片', copied: '已复制' },
+  vi: { connect: 'Liên hệ', saveShort: 'CardBook', specialties: 'Lĩnh vực chuyên môn', chapter: 'BNI Chapter {c}', work: 'Công việc của tôi', help: 'Tôi giúp ai', call: 'Gọi', sms: 'Nhắn tin', email: 'Email', save: 'Lưu vào CardBook', saveSub: 'Lưu mọi danh thiếp ở một nơi', contact: 'Lưu danh bạ', referral: 'Xin giới thiệu giúp tôi', share: 'Chia sẻ', qr: 'Mã QR', make: 'Tạo danh thiếp chỉ 5.900₩', copied: 'Đã sao chép' },
+  mn: { connect: 'Холбоо барих', saveShort: 'CardBook', specialties: 'Мэргэшсэн чиглэл', chapter: 'BNI {c} бүлэг', work: 'Миний ажил', help: 'Би хэнд тусалдаг вэ', call: 'Залгах', sms: 'Мессеж', email: 'И-мэйл', save: 'CardBook-д хадгалах', saveSub: 'Нэрийн хуудсаа нэг дор хадгална', contact: 'Холбоо барих хадгалах', referral: 'Ийм хүмүүсийг танилцуулна уу', share: 'Хуваалцах', qr: 'QR код', make: '5,900₩-өөр нэрийн хуудас хийх', copied: 'Хуулсан' },
 };
 
 // ===== 색상 =====
@@ -35,6 +35,26 @@ const AC_SWATCH = {
   sub: ['#FFFFFF', '#E8E1D3', '#EDE8DC', '#F1E6DF', '#E6EEEA', '#E3EEF4', '#EEEAF5', '#F5F1EC'],
   point: ['#C8963E', '#D07A3B', '#3FA58A', '#F2A541', '#E76F51', '#2E4057', '#E0A458', '#8A8A85'],
 };
+
+// 글꼴 5종 — 제목(head)·본문(body). 영문 보조 이름과 머리말은 모든 글꼴 공통(Playfair Display)
+const AC_FONTS = {
+  modern: { label: '모던', sample: '깔끔한 고딕', css: ['https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css'] },
+  classic: { label: '클래식', sample: '단정한 명조', css: ['https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700;900&display=swap'] },
+  elegant: { label: '우아한', sample: '부드러운 바탕', css: ['https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap'] },
+  soft: { label: '친근한', sample: '둥근 돋움', css: ['https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap'] },
+  bold: { label: '강렬한', sample: '굵은 제목', css: ['https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap'] },
+};
+const AC_FONT_BASE = ['https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css',
+  'https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,500&display=swap'];
+function acLoadFont(key) {   // 고른 글꼴만 그때그때 불러옴(페이지가 무거워지지 않게)
+  if (typeof document === 'undefined') return;
+  [...AC_FONT_BASE, ...((AC_FONTS[key] || AC_FONTS.modern).css)].forEach(href => {
+    if (document.querySelector(`link[data-acfont="${href}"]`)) return;
+    const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.dataset.acfont = href; document.head.appendChild(l);
+  });
+}
+// 템플릿별 기본 글꼴(사용자가 고르지 않았을 때)
+const AC_TPL_FONT = { minimal: 'modern', split: 'modern', badge: 'soft', magazine: 'classic', dark: 'modern', block: 'bold' };
 
 const AC_TEMPLATES = {
   minimal: '미니멀 센터형', split: '대각선 스플릿형', badge: '플로팅 배지형',
@@ -100,6 +120,8 @@ function acView(card, lang) {
     profile: (card.images || {}).profile || '', second: (card.images || {}).second || '',
     secondType: (card.images || {}).secondType || 'hero',
     ui: AC_UI[lang] || AC_UI.en,
+    // 이름 아래 작은 보조 이름: 지금 언어가 아닌 영어(없으면 기본 언어) 이름
+    name2: (() => { const n = card.name || {}, cur = acPick(n, lang, card); const alt = lang !== 'en' ? n.en : n[base]; return alt && alt !== cur ? alt : ''; })(),
     chapter: card.chapter && card.showChapter !== false ? (AC_UI[lang] || AC_UI.en).chapter.replace('{c}', card.chapter) : '',
     // 인물 사진을 상단에 크게 (BNI 이미지 명함들의 공통점). 예전 명함은 design.photo가 없으므로 작은 사진 그대로
     large: !!((card.images || {}).profile && (card.design || {}).photo === 'large'),
@@ -124,6 +146,7 @@ const AC_ICON = {
   share: AC_SVG('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>'),
   qr: AC_SVG('<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M17 20h4v-3"/>'),
   chevron: AC_SVG('<path d="m9 18 6-6-6-6"/>', 16),
+  insta: AC_SVG('<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/>'),
 };
 
 function acAvatar(v, cls) {
@@ -136,35 +159,49 @@ function acLogo(v) { return v.second && v.secondType === 'logo' ? `<img class="a
 function acHeroBg(v) { return v.second && v.secondType === 'hero' ? `<div class="ac-hero-img" style="background-image:url('${acEsc(v.second)}')"></div><div class="ac-hero-veil"></div>` : ''; }
 function acRole(v) { return [v.title, v.company].filter(Boolean).map(acEsc).join(' · '); }
 
-// 이름 바로 아래 원형 아이콘 한 줄 — 전화·문자·이메일
-function acContact(v) {
-  const b = [];
-  if (v.phone) {
-    const tel = v.phone.replace(/[^0-9+]/g, '');
-    b.push(`<a class="ac-ci" href="tel:${tel}" aria-label="${v.ui.call}" title="${v.ui.call}">${AC_ICON.call}</a>`);
-    b.push(`<a class="ac-ci" href="sms:${tel}" aria-label="${v.ui.sms}" title="${v.ui.sms}">${AC_ICON.sms}</a>`);
-  }
-  if (v.email) b.push(`<a class="ac-ci" href="mailto:${acEsc(v.email)}" aria-label="${v.ui.email}" title="${v.ui.email}">${AC_ICON.email}</a>`);
-  return b.length ? `<div class="ac-contact">${b.join('')}</div>` : '';
+// ===== DiCA 디자인 언어 — 작은 영문 머리말 + 큰 제목, 이름 위계, 연락처 줄, 하단 고정 바 =====
+const AC_KICK = { work: 'ABOUT', spec: 'SPECIALTIES', help: 'WHO I HELP', referral: 'REFERRAL', connect: 'CONNECT' };
+function acHead(key, title, i) {
+  return `<div class="ac-head"><span class="ac-kick">${AC_KICK[key]}</span>
+    <h3 class="ac-h"><span class="ac-num">${String(i).padStart(2, '0')}</span><span class="ac-ht">${title}</span></h3></div>`;
 }
-// 본문 섹션: 하는 일 → 이런 분을 돕습니다 → 이런 분을 소개해주세요
+// 이름 블록: 챕터 배지 → 이름 → 보조 이름(영문 기울임) → 직함·회사 → 짧은 강조선 → (옵션) 한 줄 소개
+function acIdentity(v, opt = {}) {
+  return `<div class="ac-id">${opt.avatar ? acAvatar(v, 'ac-photo') : ''}<div class="ac-idt">${acChapter(v)}
+    <h1>${acEsc(v.name)}</h1>${v.name2 ? `<div class="ac-name2">${acEsc(v.name2)}</div>` : ''}
+    <div class="ac-role">${acRole(v)}</div><i class="ac-rule"></i>
+    ${opt.slogan && v.slogan ? `<p class="ac-slogan">${acEsc(v.slogan)}</p>` : ''}</div></div>`;
+}
+// 본문 섹션: 하는 일 → 전문분야 → 이런 분을 돕습니다 → 이런 분을 소개해주세요
 function acSections(v) {
   const list = [['work', v.ui.work, v.work], ['spec', v.ui.specialties, v.specialties], ['help', v.ui.help, v.help], ['referral', v.ui.referral, v.referral]]
     .filter(x => Array.isArray(x[2]) ? x[2].length : x[2]);
-  return list.map(([k, title, body], i) => `<section class="ac-sec ac-sec-${k}">
-      <h3 class="ac-h"><span class="ac-num">${String(i + 1).padStart(2, '0')}</span><span class="ac-ht">${title}</span></h3>
-      ${Array.isArray(body) ? `<ul class="ac-list">${body.map(x => `<li>${acEsc(x)}</li>`).join('')}</ul>` : `<p>${acEsc(body)}</p>`}</section>`).join('');
+  return list.map(([k, title, body], i) => {
+    let inner;
+    if (Array.isArray(body)) inner = `<ul class="ac-list">${body.map(x => `<li>${acEsc(x)}</li>`).join('')}</ul>`;
+    else if (k === 'referral') {   // 줄바꿈으로 나뉜 리퍼럴은 알약 목록, 한 문장이면 인용 카드
+      const lines = body.split('\n').map(x => x.trim()).filter(Boolean);
+      inner = lines.length > 1 ? `<ul class="ac-list ac-reflist">${lines.map(x => `<li>${acEsc(x)}</li>`).join('')}</ul>` : `<div class="ac-box ac-quote"><p>${acEsc(body)}</p></div>`;
+    } else inner = `<div class="ac-box"><p>${acEsc(body)}</p></div>`;
+    return `<section class="ac-sec ac-sec-${k}">${acHead(k, title, i + 1)}${inner}</section>`;
+  }).join('');
 }
-// 이름 근처 작은 배지 — "BNI ○○ 챕터"
-function acChapter(v) { return v.chapter ? `<span class="ac-chapter">${acEsc(v.chapter)}</span>` : ''; }
-// 상단 큰 인물 사진
+function acChapter(v) { return v.chapter ? `<span class="ac-chapter"><i></i>${acEsc(v.chapter)}</span>` : ''; }
 function acBig(v) { return `<img class="ac-big" src="${acEsc(v.profile)}" alt="${acEsc(v.name)}">`; }
 function acSaveBtn(v) {
-  return `<button type="button" class="ac-save" data-ac="save">${AC_ICON.book}<span class="ac-save-t"><b>${v.ui.save}</b><small>${v.ui.saveSub}</small></span></button>`;
+  return `<button type="button" class="ac-save" data-ac="save">${AC_ICON.book}<span class="ac-save-t"><b>${v.ui.save}</b><small>${v.ui.saveSub}</small></span>${AC_ICON.chevron}</button>`;
 }
-function acLinks(v) {
-  if (!v.links.length) return '';
-  return `<nav class="ac-links">${v.links.map(l => `<a href="${acEsc(acSafeUrl(l.url))}" target="_blank" rel="noopener">${AC_ICON.link}<span>${acEsc(l.label || l.url)}</span>${AC_ICON.chevron}</a>`).join('')}</nav>`;
+// 연락하기: 아이콘 상자 + 영문 라벨 + 값 (DiCA의 CONNECT)
+const acPretty = u => String(u || '').replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, '');
+function acConnect(v) {
+  const rows = [];
+  if (v.phone) rows.push(['tel:' + v.phone.replace(/[^0-9+]/g, ''), AC_ICON.call, 'PHONE', v.phone]);
+  if (v.email) rows.push(['mailto:' + v.email, AC_ICON.email, 'EMAIL', v.email]);
+  v.links.forEach(l => { const url = acSafeUrl(l.url), ig = /instagram\.com/i.test(url);
+    rows.push([url, ig ? AC_ICON.insta : AC_ICON.link, ig ? 'INSTAGRAM' : (l.label || 'LINK'), acPretty(url), true]); });
+  if (!rows.length) return '';
+  return `<section class="ac-sec ac-sec-connect">${acHead('connect', v.ui.connect, 0)}<div class="ac-crows">${rows.map(([href, ic, lab, val, ext]) =>
+    `<a class="ac-crow" href="${acEsc(href)}"${ext ? ' target="_blank" rel="noopener"' : ''}><i>${ic}</i><span><b>${acEsc(lab)}</b><em>${acEsc(val)}</em></span></a>`).join('')}</div></section>`;
 }
 // 맨 아래 작은 아이콘 3개 — 연락처 저장·공유·QR
 function acTools(v) {
@@ -172,58 +209,57 @@ function acTools(v) {
   return `<div class="ac-tools">${t.map(([k, ic, lb]) => `<button type="button" data-ac="${k}" aria-label="${lb}"><i>${ic}</i><span>${lb}</span></button>`).join('')}</div>`;
 }
 function acFooter(v) { return `<a class="ac-make" href="../?from=card" data-ac="make">${v.ui.make} →</a>`; }
+// 화면 아래 고정 바: 전화·문자·메일·카드북 — 스크롤해도 늘 한 번에 누를 수 있게
+function acDock(v) {
+  const b = [];
+  if (v.phone) { const tel = v.phone.replace(/[^0-9+]/g, '');
+    b.push(`<a href="tel:${tel}">${AC_ICON.call}<span>${v.ui.call}</span></a>`, `<a href="sms:${tel}">${AC_ICON.sms}<span>${v.ui.sms}</span></a>`); }
+  if (v.email) b.push(`<a href="mailto:${acEsc(v.email)}">${AC_ICON.email}<span>${v.ui.email}</span></a>`);
+  b.push(`<button type="button" data-ac="save" class="ac-dock-save">${AC_ICON.book}<span>${v.ui.saveShort}</span></button>`);
+  return `<nav class="ac-dock">${b.join('')}</nav>`;
+}
 function acBody(v, opt = {}) {
   return `<main class="ac-main">
-    ${v.slogan && !opt.noSlogan ? `<p class="ac-slogan">${acEsc(v.slogan)}</p>` : ''}
+    ${v.slogan && !opt.noSlogan ? `<p class="ac-slogan ac-slogan-body">${acEsc(v.slogan)}</p>` : ''}
     <div class="ac-secs">${acSections(v)}</div>
-    ${acSaveBtn(v)}${acLinks(v)}${acTools(v)}${acFooter(v)}
-  </main>`;
+    ${acSaveBtn(v)}${acConnect(v)}${acTools(v)}${acFooter(v)}
+  </main>${acDock(v)}`;
 }
+// 사진 없는 상단(히어로): 배경 사진이 있으면 그것, 없으면 템플릿 패턴(CSS)
+function acTop(v, inner = '') { return `<header class="ac-hero">${v.large ? acBig(v) : acHeroBg(v)}${acLogo(v)}${inner}</header>`; }
 
-// ===== 템플릿 6종 — 상단 배치가 다르고, 본문 모양은 CSS(.tpl-*)가 다르게 입힌다 =====
+// ===== 템플릿 6종 — 같은 디자인 언어 위에서 배치·질감·색 쓰는 법이 다르다 =====
 const AC_TPL = {
-  // 1. 미니멀 센터형 — 가운데 정렬, 얇은 구분선, 넉넉한 여백
+  // 1. 미니멀 센터형 — 밝은 바탕, 둥근 사진 카드, 가운데 정렬, 얇은 구분선
   minimal(v) {
-    return `<header class="ac-hero">${v.large ? acBig(v) : acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
-      ${acBody(v)}`;
+    return `${acTop(v)}${acIdentity(v, { avatar: !v.large })}${acBody(v)}`;
   },
-  // 2. 대각선 스플릿형 — 메인색 면과 사진이 대각선으로 나뉨, 본문은 모서리를 사선으로 자른 카드
+  // 2. 대각선 스플릿형 — 메인색 면과 사진이 사선으로 나뉨, 이름은 색 면 위
   split(v) {
     return `<header class="ac-hero">${acHeroBg(v)}
         <div class="ac-split-photo">${v.profile ? `<img src="${acEsc(v.profile)}" alt="">` : `<div class="ac-initial">${acEsc((v.name || '?').charAt(0))}</div>`}</div>
-        <div class="ac-id">${acLogo(v)}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
-      </header>
-      ${acBody(v)}`;
+        ${acLogo(v)}${acIdentity(v)}
+      </header>${acBody(v)}`;
   },
-  // 3. 플로팅 배지형 — 히어로 위에 떠 있는 카드 + 원형 배지 사진, 섹션도 떠 있는 둥근 카드
+  // 3. 플로팅 배지형 — 사진 위에 떠 있는 이름 카드, 섹션도 떠 있는 둥근 카드
   badge(v) {
-    return `<header class="ac-hero">${v.large ? acBig(v) : acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-float"><div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
-      ${acBody(v)}`;
+    return `${acTop(v)}<div class="ac-float">${acIdentity(v, { avatar: !v.large })}</div>${acBody(v)}`;
   },
-  // 4. 매거진 에디토리얼형 — 큰 세로 사진 + 세리프 이름, 번호 붙은 섹션
+  // 4. 매거진 에디토리얼형 — 제호 줄, 표지 사진, 큰 세리프 이름, 번호 붙은 섹션
   magazine(v) {
     return `<header class="ac-hero">${acHeroBg(v)}
         <div class="ac-mag-top"><span>${acEsc(v.company || v.title)}</span>${acLogo(v)}</div>
         ${v.profile ? `<img class="ac-mag-photo" src="${acEsc(v.profile)}" alt="">` : `<div class="ac-mag-cover"><span>${acEsc((v.name || '?').trim().charAt(0))}</span></div>`}
-      </header>
-      <div class="ac-id">${acChapter(v)}<div class="ac-kicker">${acEsc(v.title)}</div><h1>${acEsc(v.name)}</h1>${acContact(v)}<i class="ac-rule"></i></div>
-      ${acBody(v)}`;
+      </header>${acIdentity(v)}${acBody(v)}`;
   },
-  // 5. 다크 프리미엄형 — 어두운 면 + 강조색 얇은 테두리
+  // 5. 다크 프리미엄형(DiCA와 가장 가까움) — 꽉 찬 사진이 어둠으로 녹아들고 이름이 그 위에
   dark(v) {
-    return `<header class="ac-hero">${v.large ? acBig(v) : acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
-      ${acBody(v)}`;
+    return `${acTop(v, acIdentity(v, { avatar: !v.large && !v.second, slogan: true }))}${acBody(v, { noSlogan: true })}`;
   },
-  // 6. 컬러 블록형 — 섹션마다 main/sub/point 색 면을 번갈아 꽉 채움
+  // 6. 컬러 블록형 — 사진 → 메인색 이름 블록 → 강조색 한 줄 소개 → 섹션마다 색 면 교차
   block(v) {
-    return `${v.large ? `<div class="ac-bigwrap">${acBig(v)}</div>` : ''}<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}
-        <div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}<div>${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
-      </header>
-      ${v.slogan ? `<div class="ac-band"><p>${acEsc(v.slogan)}</p></div>` : ''}
-      ${acBody(v, { noSlogan: true })}`;
+    return `${v.large ? `<div class="ac-bigwrap">${acBig(v)}</div>` : ''}<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}${acIdentity(v, { avatar: !v.large })}</header>
+      ${v.slogan ? `<div class="ac-band"><p>${acEsc(v.slogan)}</p></div>` : ''}${acBody(v, { noSlogan: true })}`;
   },
 };
 
@@ -233,7 +269,10 @@ function acRender(el, card, lang) {
   const tpl = AC_TPL[design.tpl] ? design.tpl : 'minimal';
   const p = acPalette({ ...design, tpl });
   const v = acView(card, lang);
+  const font = AC_FONTS[design.font] ? design.font : AC_TPL_FONT[tpl];
+  acLoadFont(font);
   el.className = 'ac-card tpl-' + tpl + (v.second && v.secondType === 'hero' ? ' has-hero' : '') + (v.profile ? '' : ' no-photo') + (v.large ? ' photo-large' : '');
+  el.dataset.font = font;
   const vars = {
     '--main': p.main, '--sub': p.sub, '--point': p.point, '--bg': p.bg, '--surface': p.surface,
     '--on-main': p.onMain, '--on-bg': p.onBg, '--on-surface': p.onSurface, '--on-point': p.onPoint,

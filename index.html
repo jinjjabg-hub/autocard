@@ -418,8 +418,14 @@ function drawPreview(lang) {
 const AFTER = {
   1() {
     document.querySelectorAll('[data-base]').forEach(b => b.onclick = () => {
-      const k = b.dataset.base;
+      const k = b.dataset.base, prev = base();
       S.langs = [k, ...S.langs.filter(l => l !== k)].slice(0, AC_MAX_LANGS);
+      // 기본 언어 = 직접 적는 언어. 이미 적어둔(또는 이미지에서 읽은) 직함·회사·문구는 새 기본 언어 칸으로 따라가게
+      if (prev && prev !== k) {
+        ['title', 'company'].forEach(f => { if (!(S[f][k] || '').trim() && S[f][prev]) S[f][k] = S[f][prev]; });
+        const pc = S.copy[prev], nc = S.copy[k];
+        if (pc && !(nc && [nc.slogan, nc.work, nc.help, nc.referral].some(x => (x || '').trim()))) S.copy[k] = JSON.parse(JSON.stringify(pc));
+      }
       S.trKey = ''; save(); render();
     });
     document.querySelectorAll('[data-extra]').forEach(b => b.onclick = () => {
@@ -666,6 +672,8 @@ function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); 
 
 // 추출 결과 → 각 단계 칸. 채운 칸은 S.auto에 표시(노란 배경 + "확인해주세요")
 function applyImport(r) {
+  // 이미지 한 장 = 새 명함. 이전에 입력하던 내용(다른 사람 문구·답변)이 섞이지 않게 처음 상태에서 시작
+  S = Object.assign(blankState(), { ref: S.ref, mode: 'import' });
   const b = base(), c = copyOf(b), A = S.auto = {};
   const set = (key, cond, fn) => { if (cond) { fn(); A[key] = 1; } };
   set('name', r.name, () => { S.name[b] = r.name; });

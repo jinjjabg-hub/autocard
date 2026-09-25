@@ -366,6 +366,9 @@ const VIEWS = {
     const extras = S.langs.slice(1);
     return `<h2>이렇게 만들어져요</h2>
       <p class="lead">받는 사람 폰에서 보이는 모습 그대로예요. 고칠 곳이 있으면 이전 단계로 돌아가세요.</p>
+      ${hangulInBase() ? `<div class="callout" id="langWarn"><b>${AC_LANGS[base()]} 명함에 한국어 문구가 들어 있어요.</b><br>
+        기본 언어는 직접 적는 언어라 그대로 보여요. ${S.langs.includes('ko') ? '한국어를 기본 언어로 바꾸면 한국어 문구를 기준으로 ' + AC_LANGS[base()] + '가 자동 번역돼요.' : '한국어로 적은 문구를 ' + AC_LANGS[base()] + '로 번역해서 넣을 수 있어요.'}
+        <button type="button" class="btn brand wide" id="fixLangBtn" style="margin-top:10px">${S.langs.includes('ko') ? '한국어를 기본 언어로 바꾸기' : AC_LANGS[base()] + '로 번역해서 넣기'}</button></div>` : ''}
       ${extras.length ? `<div class="tabs" id="tabs">${S.langs.map(l => `<button type="button" class="chip ${l === previewLang ? 'on' : ''}" data-pl="${l}">${AC_LANGS[l]}</button>`).join('')}</div>
         <div class="hint" id="trStatus" style="text-align:center"></div>` : ''}
       <div class="phone"><div class="scr"><div id="preview"></div></div></div>
@@ -501,6 +504,7 @@ const AFTER = {
     }
     if (!S.langs.includes(previewLang)) previewLang = base();
     drawPreview(previewLang);
+    const fx = $('fixLangBtn'); if (fx) fx.onclick = fixBaseLang;
     document.querySelectorAll('[data-pl]').forEach(b => b.onclick = () => {
       previewLang = b.dataset.pl;
       document.querySelectorAll('[data-pl]').forEach(x => x.classList.toggle('on', x === b));
@@ -562,6 +566,39 @@ $('prevBtn').onclick = () => { S.step = Math.max(0, S.step - 1); if (S.step === 
 // ===================================================================
 // AI (Cloudflare Worker cardbook-ai 경유 — API 키는 Worker Secret에만)
 // ===================================================================
+// 기본 언어가 한국어가 아닌데 문구를 한국어로 적은 경우(→ 그 언어 명함에 한국어가 그대로 나감)를 찾아 알려줌
+// 회사명은 한글 상호일 수 있어 제외
+function hangulInBase() {
+  const b = base(); if (b === 'ko') return false;
+  const c = copyOf(b);
+  return [S.title[b], c.slogan, c.work, c.help, c.referral, ...(c.specialties || [])].some(v => /[가-힣]/.test(v || ''));
+}
+async function fixBaseLang() {
+  const b = base(), btn = $('fixLangBtn');
+  if (S.langs.includes('ko')) {
+    // 한국어를 기본으로: 적어둔 문구를 한국어 칸으로 옮기고, 원래 언어 칸은 비워 번역으로 채움
+    S.title.ko = S.title[b]; S.company.ko = S.company[b]; S.copy.ko = JSON.parse(JSON.stringify(copyOf(b)));
+    S.title[b] = ''; S.copy[b] = {};
+    if (!(S.name.ko || '').trim()) S.name.ko = S.name[b];   // 기본 언어 이름은 비면 안 됨 → 일단 적어둔 이름을 그대로
+    if (/[가-힣]/.test(S.name[b] || '')) S.name[b] = '';   // 한글 이름이었다면 원래 언어 칸은 비워 자동 표기로
+    S.langs = ['ko', ...S.langs.filter(l => l !== 'ko')]; S.trKey = ''; previewLang = 'ko';
+    save(); render(); toast('한국어를 기본 언어로 바꿨어요');
+    return;
+  }
+  // 한국어가 없는 명함: 한국어로 적은 문구를 기본 언어로 번역해서 채움
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 번역 중…';
+  try {
+    const c = copyOf(b), texts = { title: S.title[b] || '', company: S.company[b] || '', specialties: (c.specialties || []).join('\n') };
+    COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || ''; });
+    if (/[가-힣]/.test(S.name[b] || '')) texts.name = S.name[b];
+    const x = (await callWorker('/autocard/translate', { from: 'ko', to: [b], texts }))[b];
+    if (!x) throw new Error('번역 결과가 없어요');
+    if (x.title) S.title[b] = x.title; if (x.company) S.company[b] = x.company; if (texts.name && x.name) S.name[b] = x.name;
+    COPY_FIELDS.forEach(([k]) => { if (x[k]) c[k] = x[k]; });
+    if (x.specialties) c.specialties = splitLines(x.specialties);
+    S.trKey = ''; save(); render(); toast(AC_LANGS[b] + '로 번역해서 넣었어요');
+  } catch (e) { btn.disabled = false; btn.textContent = '다시 시도'; toast('번역을 못 했어요: ' + e.message); }
+}
 async function callWorker(path, body, timeoutMs = 30000) {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeoutMs);
   try {
@@ -827,6 +864,7 @@ async function signIn() {
 async function publish() {
   const err = $('err'), btn = $('pubBtn');
   if (!$('agree').checked) { err.textContent = '동의에 체크해주세요'; return; }
+  if (hangulInBase() && !confirm(`${AC_LANGS[base()]} 명함에 한국어 문구가 그대로 있어요. 이대로 발행 요청할까요?`)) return;
   err.textContent = ''; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 로그인 중…';
   try {
     const user = await signIn();

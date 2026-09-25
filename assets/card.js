@@ -96,6 +96,8 @@ function acFixColors(c) {
   sub = readable(sub); main = readable(main); point = readable(point);
   if (acContrast(main, sub) < 1.5) main = readable(away(main, sub, 1.5));
   if (acContrast(point, sub) < 2) point = readable(away(point, sub, 2));
+  // 메인과 포인트가 거의 같은 색이면(예: 금색+금색) 포인트가 강조 역할을 못 함 → 메인을 바탕 반대쪽으로 진하게/연하게 한 톤을 포인트로
+  if (acContrast(main, point) < 1.4) point = readable(acMix(main, acLum(sub) > 0.4 ? '#000000' : '#FFFFFF', 0.45));
   return { main, sub, point };
 }
 

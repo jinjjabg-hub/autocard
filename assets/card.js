@@ -7,12 +7,12 @@ const AC_LANGS = {
 
 // 명함 화면의 고정 문구(버튼 이름 등) — 사용자가 쓴 문구가 아니므로 AI 번역 없이 미리 준비
 const AC_UI = {
-  ko: { work: '하는 일', help: '이런 분을 돕습니다', call: '전화', sms: '문자', email: '이메일', save: '카드북에 저장', saveSub: '받은 명함을 명함첩에 한 번에 보관해요', contact: '연락처 저장', referral: '이런 분을 소개해주세요', share: '명함 공유', qr: 'QR 코드', make: '나도 5,900원으로 명함 만들기', copied: '주소가 복사됐어요' },
-  en: { work: 'What I do', help: 'Who I help', call: 'Call', sms: 'Text', email: 'Email', save: 'Save to CardBook', saveSub: 'Keep every card you receive in one place', contact: 'Save contact', referral: 'Who I would love to meet', share: 'Share', qr: 'QR code', make: 'Make your own card for ₩5,900', copied: 'Link copied' },
-  ja: { work: '仕事内容', help: 'こんな方をお手伝いします', call: '電話', sms: 'SMS', email: 'メール', save: 'CardBookに保存', saveSub: 'もらった名刺をまとめて保管', contact: '連絡先を保存', referral: 'こんな方をご紹介ください', share: '共有', qr: 'QRコード', make: '5,900ウォンで名刺をつくる', copied: 'コピーしました' },
-  zh: { work: '我的工作', help: '我能帮助的人', call: '电话', sms: '短信', email: '邮件', save: '保存到CardBook', saveSub: '收到的名片一键保存', contact: '保存联系人', referral: '请为我介绍这样的人', share: '分享', qr: '二维码', make: '5,900韩元制作我的名片', copied: '已复制' },
-  vi: { work: 'Công việc của tôi', help: 'Tôi giúp ai', call: 'Gọi', sms: 'Nhắn tin', email: 'Email', save: 'Lưu vào CardBook', saveSub: 'Lưu mọi danh thiếp ở một nơi', contact: 'Lưu danh bạ', referral: 'Xin giới thiệu giúp tôi', share: 'Chia sẻ', qr: 'Mã QR', make: 'Tạo danh thiếp chỉ 5.900₩', copied: 'Đã sao chép' },
-  mn: { work: 'Миний ажил', help: 'Би хэнд тусалдаг вэ', call: 'Залгах', sms: 'Мессеж', email: 'И-мэйл', save: 'CardBook-д хадгалах', saveSub: 'Нэрийн хуудсаа нэг дор хадгална', contact: 'Холбоо барих хадгалах', referral: 'Ийм хүмүүсийг танилцуулна уу', share: 'Хуваалцах', qr: 'QR код', make: '5,900₩-өөр нэрийн хуудас хийх', copied: 'Хуулсан' },
+  ko: { specialties: '전문분야', chapter: 'BNI {c} 챕터', work: '하는 일', help: '이런 분을 돕습니다', call: '전화', sms: '문자', email: '이메일', save: '카드북에 저장', saveSub: '받은 명함을 명함첩에 한 번에 보관해요', contact: '연락처 저장', referral: '이런 분을 소개해주세요', share: '명함 공유', qr: 'QR 코드', make: '나도 5,900원으로 명함 만들기', copied: '주소가 복사됐어요' },
+  en: { specialties: 'Specialties', chapter: 'BNI {c} Chapter', work: 'What I do', help: 'Who I help', call: 'Call', sms: 'Text', email: 'Email', save: 'Save to CardBook', saveSub: 'Keep every card you receive in one place', contact: 'Save contact', referral: 'Who I would love to meet', share: 'Share', qr: 'QR code', make: 'Make your own card for ₩5,900', copied: 'Link copied' },
+  ja: { specialties: '専門分野', chapter: 'BNI {c} チャプター', work: '仕事内容', help: 'こんな方をお手伝いします', call: '電話', sms: 'SMS', email: 'メール', save: 'CardBookに保存', saveSub: 'もらった名刺をまとめて保管', contact: '連絡先を保存', referral: 'こんな方をご紹介ください', share: '共有', qr: 'QRコード', make: '5,900ウォンで名刺をつくる', copied: 'コピーしました' },
+  zh: { specialties: '专业领域', chapter: 'BNI {c} 分会', work: '我的工作', help: '我能帮助的人', call: '电话', sms: '短信', email: '邮件', save: '保存到CardBook', saveSub: '收到的名片一键保存', contact: '保存联系人', referral: '请为我介绍这样的人', share: '分享', qr: '二维码', make: '5,900韩元制作我的名片', copied: '已复制' },
+  vi: { specialties: 'Lĩnh vực chuyên môn', chapter: 'BNI Chapter {c}', work: 'Công việc của tôi', help: 'Tôi giúp ai', call: 'Gọi', sms: 'Nhắn tin', email: 'Email', save: 'Lưu vào CardBook', saveSub: 'Lưu mọi danh thiếp ở một nơi', contact: 'Lưu danh bạ', referral: 'Xin giới thiệu giúp tôi', share: 'Chia sẻ', qr: 'Mã QR', make: 'Tạo danh thiếp chỉ 5.900₩', copied: 'Đã sao chép' },
+  mn: { specialties: 'Мэргэшсэн чиглэл', chapter: 'BNI {c} бүлэг', work: 'Миний ажил', help: 'Би хэнд тусалдаг вэ', call: 'Залгах', sms: 'Мессеж', email: 'И-мэйл', save: 'CardBook-д хадгалах', saveSub: 'Нэрийн хуудсаа нэг дор хадгална', contact: 'Холбоо барих хадгалах', referral: 'Ийм хүмүүсийг танилцуулна уу', share: 'Хуваалцах', qr: 'QR код', make: '5,900₩-өөр нэрийн хуудас хийх', copied: 'Хуулсан' },
 };
 
 // ===== 색상 =====
@@ -95,10 +95,14 @@ function acView(card, lang) {
   return {
     name: acPick(card.name, lang, card), title: acPick(card.title, lang, card), company: acPick(card.company, lang, card),
     slogan: pick('slogan'), work: pick('work', 'work'), help: pick('help', 'customer'), referral: pick('referral', 'referral'),
-    phone: card.phone || '', email: card.email || '', links: (card.links || []).filter(l => l && l.url),
+    specialties: ((cur.specialties && cur.specialties.length ? cur.specialties : org.specialties) || []).filter(Boolean),
+    phone: card.phone || '', phone2: card.phone2 || '', email: card.email || '', links: (card.links || []).filter(l => l && l.url),
     profile: (card.images || {}).profile || '', second: (card.images || {}).second || '',
     secondType: (card.images || {}).secondType || 'hero',
     ui: AC_UI[lang] || AC_UI.en,
+    chapter: card.chapter && card.showChapter !== false ? (AC_UI[lang] || AC_UI.en).chapter.replace('{c}', card.chapter) : '',
+    // 인물 사진을 상단에 크게 (BNI 이미지 명함들의 공통점). 예전 명함은 design.photo가 없으므로 작은 사진 그대로
+    large: !!((card.images || {}).profile && (card.design || {}).photo === 'large'),
   };
 }
 function acSafeUrl(u) {
@@ -145,11 +149,16 @@ function acContact(v) {
 }
 // 본문 섹션: 하는 일 → 이런 분을 돕습니다 → 이런 분을 소개해주세요
 function acSections(v) {
-  const list = [['work', v.ui.work, v.work], ['help', v.ui.help, v.help], ['referral', v.ui.referral, v.referral]].filter(x => x[2]);
-  return list.map(([k, title, text], i) => `<section class="ac-sec ac-sec-${k}">
+  const list = [['work', v.ui.work, v.work], ['spec', v.ui.specialties, v.specialties], ['help', v.ui.help, v.help], ['referral', v.ui.referral, v.referral]]
+    .filter(x => Array.isArray(x[2]) ? x[2].length : x[2]);
+  return list.map(([k, title, body], i) => `<section class="ac-sec ac-sec-${k}">
       <h3 class="ac-h"><span class="ac-num">${String(i + 1).padStart(2, '0')}</span><span class="ac-ht">${title}</span></h3>
-      <p>${acEsc(text)}</p></section>`).join('');
+      ${Array.isArray(body) ? `<ul class="ac-list">${body.map(x => `<li>${acEsc(x)}</li>`).join('')}</ul>` : `<p>${acEsc(body)}</p>`}</section>`).join('');
 }
+// 이름 근처 작은 배지 — "BNI ○○ 챕터"
+function acChapter(v) { return v.chapter ? `<span class="ac-chapter">${acEsc(v.chapter)}</span>` : ''; }
+// 상단 큰 인물 사진
+function acBig(v) { return `<img class="ac-big" src="${acEsc(v.profile)}" alt="${acEsc(v.name)}">`; }
 function acSaveBtn(v) {
   return `<button type="button" class="ac-save" data-ac="save">${AC_ICON.book}<span class="ac-save-t"><b>${v.ui.save}</b><small>${v.ui.saveSub}</small></span></button>`;
 }
@@ -175,22 +184,22 @@ function acBody(v, opt = {}) {
 const AC_TPL = {
   // 1. 미니멀 센터형 — 가운데 정렬, 얇은 구분선, 넉넉한 여백
   minimal(v) {
-    return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
+    return `<header class="ac-hero">${v.large ? acBig(v) : acHeroBg(v)}${acLogo(v)}</header>
+      <div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
       ${acBody(v)}`;
   },
   // 2. 대각선 스플릿형 — 메인색 면과 사진이 대각선으로 나뉨, 본문은 모서리를 사선으로 자른 카드
   split(v) {
     return `<header class="ac-hero">${acHeroBg(v)}
         <div class="ac-split-photo">${v.profile ? `<img src="${acEsc(v.profile)}" alt="">` : `<div class="ac-initial">${acEsc((v.name || '?').charAt(0))}</div>`}</div>
-        <div class="ac-id">${acLogo(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
+        <div class="ac-id">${acLogo(v)}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
       </header>
       ${acBody(v)}`;
   },
   // 3. 플로팅 배지형 — 히어로 위에 떠 있는 카드 + 원형 배지 사진, 섹션도 떠 있는 둥근 카드
   badge(v) {
-    return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-float"><div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
+    return `<header class="ac-hero">${v.large ? acBig(v) : acHeroBg(v)}${acLogo(v)}</header>
+      <div class="ac-float"><div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
       ${acBody(v)}`;
   },
   // 4. 매거진 에디토리얼형 — 큰 세로 사진 + 세리프 이름, 번호 붙은 섹션
@@ -199,19 +208,19 @@ const AC_TPL = {
         <div class="ac-mag-top"><span>${acEsc(v.company || v.title)}</span>${acLogo(v)}</div>
         ${v.profile ? `<img class="ac-mag-photo" src="${acEsc(v.profile)}" alt="">` : `<div class="ac-mag-cover"><span>${acEsc((v.name || '?').trim().charAt(0))}</span></div>`}
       </header>
-      <div class="ac-id"><div class="ac-kicker">${acEsc(v.title)}</div><h1>${acEsc(v.name)}</h1>${acContact(v)}<i class="ac-rule"></i></div>
+      <div class="ac-id">${acChapter(v)}<div class="ac-kicker">${acEsc(v.title)}</div><h1>${acEsc(v.name)}</h1>${acContact(v)}<i class="ac-rule"></i></div>
       ${acBody(v)}`;
   },
   // 5. 다크 프리미엄형 — 어두운 면 + 강조색 얇은 테두리
   dark(v) {
-    return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}</header>
-      <div class="ac-id">${acAvatar(v, 'ac-photo')}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
+    return `<header class="ac-hero">${v.large ? acBig(v) : acHeroBg(v)}${acLogo(v)}</header>
+      <div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div>
       ${acBody(v)}`;
   },
   // 6. 컬러 블록형 — 섹션마다 main/sub/point 색 면을 번갈아 꽉 채움
   block(v) {
-    return `<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}
-        <div class="ac-id">${acAvatar(v, 'ac-photo')}<div><h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
+    return `${v.large ? `<div class="ac-bigwrap">${acBig(v)}</div>` : ''}<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}
+        <div class="ac-id">${v.large ? '' : acAvatar(v, 'ac-photo')}<div>${acChapter(v)}<h1>${acEsc(v.name)}</h1><div class="ac-role">${acRole(v)}</div>${acContact(v)}</div></div>
       </header>
       ${v.slogan ? `<div class="ac-band"><p>${acEsc(v.slogan)}</p></div>` : ''}
       ${acBody(v, { noSlogan: true })}`;
@@ -224,7 +233,7 @@ function acRender(el, card, lang) {
   const tpl = AC_TPL[design.tpl] ? design.tpl : 'minimal';
   const p = acPalette({ ...design, tpl });
   const v = acView(card, lang);
-  el.className = 'ac-card tpl-' + tpl + (v.second && v.secondType === 'hero' ? ' has-hero' : '') + (v.profile ? '' : ' no-photo');
+  el.className = 'ac-card tpl-' + tpl + (v.second && v.secondType === 'hero' ? ' has-hero' : '') + (v.profile ? '' : ' no-photo') + (v.large ? ' photo-large' : '');
   const vars = {
     '--main': p.main, '--sub': p.sub, '--point': p.point, '--bg': p.bg, '--surface': p.surface,
     '--on-main': p.onMain, '--on-bg': p.onBg, '--on-surface': p.onSurface, '--on-point': p.onPoint,
@@ -243,6 +252,7 @@ function acVcf(card, lang, url) {
   if (v.company) lines.push('ORG:' + e(v.company));
   if (v.title) lines.push('TITLE:' + e(v.title));
   if (v.phone) lines.push('TEL;TYPE=CELL:' + v.phone);
+  if (v.phone2) lines.push('TEL;TYPE=WORK:' + v.phone2);
   if (v.email) lines.push('EMAIL:' + e(v.email));
   if (url) lines.push('URL:' + url);
   v.links.forEach(l => lines.push('URL:' + acSafeUrl(l.url)));

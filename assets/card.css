@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /* ===== AutoCard 명함 스타일 — 색은 전부 card.js가 계산한 CSS 변수에서 온다 =====
    구조: 공통(뼈대) → 템플릿별(.tpl-*) 상단·본문·버튼 모양. 같은 데이터·같은 색이어도 템플릿마다 다른 명함으로 보이게 한다. */
 .ac-card {
@@ -85,10 +86,10 @@
 .tpl-split:not(.has-hero) .ac-hero {
   background-image: repeating-linear-gradient(135deg, transparent 0 16px, color-mix(in srgb, var(--point) 14%, transparent) 16px 18px); }
 .tpl-split.has-hero .ac-hero-veil { opacity: .8; }
-.tpl-split .ac-hero > .ac-split-photo { position: absolute; top: 0; right: 0; bottom: 0; width: 58%; clip-path: polygon(40% 0, 100% 0, 100% 100%, 0 100%); }
+.tpl-split .ac-hero > .ac-split-photo { position: absolute; top: 0; right: 0; bottom: 0; width: 58%; clip-path: polygon(40% 0, 100% 0, 100% 100%, 18% 100%); }
 .tpl-split .ac-split-photo img, .tpl-split .ac-split-photo .ac-initial { width: 100%; height: 100%; object-fit: cover; font-size: 88px; padding-left: 30%; }
 .tpl-split .ac-split-photo img { padding: 0; }
-.tpl-split .ac-id { padding: 24px 20px 28px; max-width: 62%; }
+.tpl-split .ac-id { padding: 24px 20px 28px; max-width: 52%; }   /* 사진의 사선 아래 끝(카드 폭 52%)보다 글자가 안쪽에 머물게 */
 .tpl-split .ac-id .ac-logo { margin-bottom: 14px; max-height: 36px; }
 .tpl-split .ac-contact { justify-content: flex-start; gap: 10px; }
 .tpl-split .ac-hero::after { content: ''; position: absolute; left: 20px; bottom: 0; width: 44px; height: 4px; background: var(--point); z-index: 2; }
@@ -188,3 +189,39 @@
 .tpl-block .ac-h { color: inherit; font-size: 15px; }
 .tpl-block .ac-save, .tpl-block .ac-links, .tpl-block .ac-tools, .tpl-block .ac-make { margin-left: 20px; margin-right: 20px; }
 .tpl-block .ac-save { width: calc(100% - 40px); background: var(--main); color: var(--on-main); box-shadow: 0 10px 24px -10px var(--main); border-radius: 6px; }
+
+/* ===================================================================
+   이미지 명함 가져오기로 추가된 요소: 챕터 배지 · 전문분야 목록 · 상단 큰 인물 사진
+   =================================================================== */
+.ac-photo, .ac-split-photo img { object-position: 50% 18%; }   /* 얼굴이 잘리지 않게 위쪽 기준으로 자름 */
+.ac-chapter { display: inline-block; margin-bottom: 10px; padding: 4px 10px; border: 1px solid currentColor; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: .02em; line-height: 1.4; }
+
+/* 전문분야 — 기본은 칩 */
+.ac-list { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.ac-list li { padding: 7px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; line-height: 1.4;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent); }
+.tpl-minimal .ac-list { justify-content: center; }
+.tpl-split .ac-list, .tpl-magazine .ac-list, .tpl-block .ac-list { display: grid; gap: 0; }
+.tpl-split .ac-list li { border: 0; border-radius: 0; padding: 6px 0; display: flex; gap: 10px; align-items: baseline; }
+.tpl-split .ac-list li::before { content: ''; width: 10px; height: 3px; background: var(--point); flex-shrink: 0; transform: translateY(-4px); }
+.tpl-badge .ac-list li { border: 0; background: var(--bg); color: var(--on-bg); }
+.tpl-magazine .ac-list li { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 10px 0; font-weight: 500; font-size: 15px; }
+.tpl-magazine .ac-list li:last-child { border-bottom: 0; }
+.tpl-magazine .ac-list li::before { content: '\2014\00a0'; color: var(--accent-bg); font-weight: 800; }
+.tpl-dark .ac-list li { border-radius: 2px; border-color: var(--point); text-transform: none; }
+.tpl-block .ac-list li { border: 0; border-radius: 0; padding: 5px 0; display: flex; gap: 10px; align-items: baseline; }
+.tpl-block .ac-list li::before { content: ''; width: 8px; height: 8px; background: currentColor; flex-shrink: 0; }
+
+/* 상단 큰 인물 사진 */
+.ac-big { display: block; width: 100%; aspect-ratio: 4 / 5; max-height: 540px; object-fit: cover; object-position: 50% 15%; }
+.photo-large .ac-hero > .ac-logo { position: absolute; top: 14px; left: 14px; z-index: 3; max-height: 34px; padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,.9); }
+.tpl-minimal.photo-large .ac-hero, .tpl-badge.photo-large .ac-hero, .tpl-dark.photo-large .ac-hero { height: auto; padding: 0; display: block; background-image: none; }
+.tpl-minimal.photo-large .ac-id { margin-top: 24px; }
+.tpl-badge.photo-large .ac-float { margin-top: -56px; padding-top: 22px; }
+.tpl-dark.photo-large .ac-hero::after { content: ''; position: absolute; inset: 40% 0 0; background: linear-gradient(transparent, var(--bg) 92%); z-index: 1; }
+.tpl-dark.photo-large .ac-id { margin-top: -44px; z-index: 2; }
+.tpl-split.photo-large .ac-hero { min-height: 440px; }
+.tpl-split.photo-large .ac-hero > .ac-split-photo { width: 66%; clip-path: polygon(40% 0, 100% 0, 100% 100%, 28% 100%); }
+.tpl-block .ac-bigwrap .ac-big { max-height: 480px; }
+.tpl-block.photo-large .ac-id { grid-template-columns: 1fr; }

@@ -70,8 +70,8 @@ $('files').onchange = async e => {
         body: JSON.stringify({ image: b64, mediaType: 'image/jpeg', hash: await sha(b64), deviceId: devId(), idToken: await idTok() }) });
       const d = await res.json(), sec = ((performance.now() - t0) / 1000).toFixed(1);
       results.push({ file: f.name, seconds: +sec, status: res.status, result: d });
-      const rows = ['name', 'title', 'company', 'phone', 'phone2', 'email', 'website', 'address', 'slogan', 'specialties', 'referral', 'career', 'chapter', 'sns']
-        .map(k => { const v = Array.isArray(d[k]) ? d[k].map(x => typeof x === 'object' ? x.label + ' ' + x.url : x).join(' / ') : d[k]; return `<tr><td>${k}</td><td>${v ? esc(v) : '<span class="empty">(없음)</span>'}</td></tr>`; }).join('');
+      const rows = ['name', 'title', 'company', 'phone', 'phone2', 'email', 'website', 'address', 'slogan', 'specialties', 'referral', 'career', 'chapter', 'sns', 'style']
+        .map(k => { const v = Array.isArray(d[k]) ? d[k].map(x => typeof x === 'object' ? x.label + ' ' + x.url : x).join(' / ') : (d[k] && typeof d[k] === 'object' ? Object.entries(d[k]).map(([a, b]) => a + ':' + b).join(' ') : d[k]); return `<tr><td>${k}</td><td>${v ? esc(v) : '<span class="empty">(없음)</span>'}</td></tr>`; }).join('');
       box.innerHTML = `<div><img src="${r.url}"><div class="meta">${esc(f.name)}<br>${sec}초${d.cached ? ' · 캐시' : ''}${d.error ? '<br><b style="color:#b3261e">' + esc(d.error) + '</b>' : ''}</div></div>
         <canvas width="220" height="276"></canvas><table>${rows}</table>`;
       const cv = box.querySelector('canvas'), g = cv.getContext('2d'), b = d.photoBox;

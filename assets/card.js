@@ -85,6 +85,20 @@ function acColorWarnings(d) {
   return w;
 }
 
+// 이미지에서 가져온 색 보정: 경고 기준(바탕↔메인 1.5, 바탕↔강조 2)을 넘을 때까지 조금씩 밝히거나 어둡게 → 원래 느낌은 살리고 구분은 확실하게
+function acFixColors(c) {
+  let { main, sub, point } = c;
+  const nudge = (col, toward) => acMix(col, toward, 0.06);
+  // 흰/검 글자 중 어느 쪽도 4.5가 안 되는 중간 밝기 색이면 가까운 쪽(밝게/어둡게)으로 밀어 글자가 읽히게
+  const readable = col => { for (let i = 0; i < 40 && acContrast(col, acTextOn(col)) < 4.5; i++) col = nudge(col, acLum(col) > 0.18 ? '#FFFFFF' : '#000000'); return col; };
+  // from과 대비가 min 이상 될 때까지 멀어지게
+  const away = (col, from, min) => { const to = acLum(from) > 0.4 ? '#000000' : '#FFFFFF'; for (let i = 0; i < 40 && acContrast(col, from) < min; i++) col = nudge(col, to); return col; };
+  sub = readable(sub); main = readable(main); point = readable(point);
+  if (acContrast(main, sub) < 1.5) main = readable(away(main, sub, 1.5));
+  if (acContrast(point, sub) < 2) point = readable(away(point, sub, 2));
+  return { main, sub, point };
+}
+
 // 템플릿에서 쓰는 모든 색을 한 번에 계산 → CSS 변수로 주입
 function acPalette(design) {
   const main = design.main, sub = design.sub, point = design.point;

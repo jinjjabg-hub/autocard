@@ -352,7 +352,8 @@ const VIEWS = {
       <label class="f" style="margin-top:22px">글꼴 <small>· 제목·이름에 쓰여요</small></label>
       <div class="fonts">${Object.entries(AC_FONTS).map(([k, f]) => `<button type="button" class="fontbtn ${curFont() === k ? 'on' : ''}" data-font="${k}" style="font-family:${FONT_FAMILY[k]}"><b>${esc(S.name[base()] || '홍길동')}</b><small>${f.label} · ${f.sample}</small></button>`).join('')}</div>
       <label class="f" style="margin-top:22px">색상</label>
-      <div class="seg">${[['preset', '추천 조합'], ['random', '랜덤'], ['custom', '직접 선택']].map(([k, n]) => `<button type="button" class="${d.colorMode === k ? 'on' : ''}" data-cm="${k}">${n}</button>`).join('')}</div>
+      ${S.auto && S.auto.style ? '<div class="autohint" style="margin-bottom:8px">기존 명함 이미지의 색·분위기로 골라뒀어요. 마음에 안 들면 바꾸세요</div>' : ''}
+      <div class="seg">${[...(S.imgStyle ? [['image', '명함 색']] : []), ['preset', '추천 조합'], ['random', '랜덤'], ['custom', '직접 선택']].map(([k, n]) => `<button type="button" class="${d.colorMode === k ? 'on' : ''}" data-cm="${k}">${n}</button>`).join('')}</div>
       ${d.colorMode === 'preset' ? `<div class="presets">${AC_PRESETS.map((p, i) => `<button type="button" class="preset ${d.presetIdx === i ? 'on' : ''}" data-preset="${i}"><span class="dots"><i style="background:${p[1]}"></i><i style="background:${p[2]}"></i><i style="background:${p[3]}"></i></span>${p[0]}</button>`).join('')}</div>` : ''}
       ${d.colorMode === 'random' ? `<button type="button" class="btn wide" id="rollBtn">🎲 다른 조합 뽑기</button><p class="hint" style="text-align:center">지금: ${AC_PRESETS[d.presetIdx][0]}</p>` : ''}
       ${d.colorMode === 'custom' ? ['main', 'sub', 'point'].map(k => `<div class="swrow"><div class="lab">${{ main: '메인색', sub: '바탕색', point: '강조색' }[k]} <small>· ${{ main: '위쪽 큰 면', sub: '전체 바탕', point: '버튼·포인트' }[k]}</small></div>
@@ -475,6 +476,7 @@ const AFTER = {
     document.querySelectorAll('[data-font]').forEach(b => b.onclick = () => { d.font = b.dataset.font; save(); render(); });
     document.querySelectorAll('[data-cm]').forEach(b => b.onclick = () => {
       d.colorMode = b.dataset.cm;
+      if (d.colorMode === 'image' && S.imgStyle) Object.assign(d, S.imgStyle);
       if (d.colorMode === 'random') roll();
       if (d.colorMode === 'preset') setPreset(d.presetIdx);
       save(); render();
@@ -687,6 +689,11 @@ function applyImport(r) {
   set('q2', r.slogan && !S.answers.customer.trim(), () => { S.answers.customer = r.slogan; });
   set('q3', r.referral && r.referral.length && !S.answers.referral.trim(), () => { S.answers.referral = r.referral.join('\n'); });
   if (!S.design.photo) S.design.photo = 'large';
+  // 명함 이미지의 느낌(브랜드 색 3개 + 템플릿 + 글꼴)을 그대로 가져옴 — 6단계에서 언제든 바꿀 수 있음
+  const st = r.style || {};
+  if (st.main) { S.imgStyle = acFixColors(st); Object.assign(S.design, S.imgStyle, { colorMode: 'image' }); A.style = 1; }
+  if (st.tpl) S.design.tpl = st.tpl;
+  if (st.font) S.design.font = st.font;
   save();
 }
 function finishImport() {

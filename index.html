@@ -646,7 +646,10 @@ function applyImport(r) {
   set('phone2', r.phone2, () => { S.phone2 = r.phone2; });
   set('email', r.email, () => { S.email = r.email; });
   set('chapter', r.chapter, () => { S.chapter = r.chapter; S.showChapter = true; });
-  if (r.website && !S.links.some(l => l.url === r.website)) S.links = [{ label: '홈페이지', url: r.website, auto: true }, ...S.links].slice(0, AC_MAX_LINKS);
+  // 링크: 홈페이지 + SNS(인스타·블로그 등). 이미 있는 주소는 건너뜀, 최대 3개
+  const found = [r.website ? { label: '홈페이지', url: r.website } : null, ...(r.sns || [])].filter(Boolean)
+    .filter(l => !S.links.some(x => x.url === l.url)).map(l => ({ ...l, auto: true }));
+  if (found.length) S.links = [...found, ...S.links].slice(0, AC_MAX_LINKS);
   set('slogan', r.slogan, () => { c.slogan = r.slogan; });
   set('specialties', r.specialties && r.specialties.length, () => { c.specialties = r.specialties.slice(); });
   // 4단계 질문 초안: Q1 = 하는 일(전문분야·경력), Q2 = 슬로건, Q3 = 이미지에 리퍼럴이 있을 때만

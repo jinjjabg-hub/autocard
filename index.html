@@ -164,7 +164,7 @@ function blankState() {
     step: 0, cardId: null, status: 'draft', createdAt: 0, ref: '',
     mode: '', auto: {},   // mode: 'import'(이미지 명함으로 시작) | 'manual'. auto: 이미지에서 자동으로 채운 칸(확인 전)
     langs: ['ko'],
-    name: {}, title: {}, company: {},
+    name: {}, title: {}, company: {}, nameAuto: {},   // nameAuto: 번역 때 자동으로 넣은 다른 언어 이름(본인이 고치면 덮어쓰지 않음)
     phone: '', phone2: '', email: '', links: [], chapter: '', showChapter: true,
     answers: { work: '', customer: '', referral: '' },
     copy: {},
@@ -275,8 +275,8 @@ const VIEWS = {
   2() {
     return `<h2>이름과 직함을 알려주세요</h2>
       <p class="lead">이름은 번역하지 않아요. 언어마다 보여주고 싶은 표기 그대로 적어주세요.</p>
-      ${S.langs.map(l => { const k = l === base() ? 'name' : ''; return `<label class="f">이름 <small>· ${AC_LANGS[l]}</small></label>
-        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${NAME_PH[l]}" autocomplete="${l === base() ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
+      ${S.langs.map(l => { const k = l === base() ? 'name' : ''; return `<label class="f">이름 <small>· ${AC_LANGS[l]}${l === base() ? '' : ' · 선택'}</small></label>
+        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${l === base() ? NAME_PH[l] : '비워두면 자동으로 넣어요 (예: ' + NAME_PH[l] + ')'}" autocomplete="${l === base() ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
       <label class="f">직함 <small>· 예: 상가 전문 중개사, 대표</small></label>
       <input class="t${autoCls('title')}" data-auto="title" id="title" value="${esc(S.title[base()] || '')}" placeholder="무슨 일을 하는 사람인지 한눈에" autocomplete="organization-title">${autoHint('title')}
       ${S.langs.length > 1 ? '<p class="hint">직함은 마지막 단계에서 선택한 언어로 자동 번역돼요.</p>' : ''}
@@ -371,6 +371,7 @@ const VIEWS = {
       <div class="phone"><div class="scr"><div id="preview"></div></div></div>
       ${extras.length ? `<details class="tr card"><summary>번역 확인·수정</summary>
         ${extras.map(l => `<div class="trlang"><b>${AC_LANGS[l]}</b>
+          <label class="f">이름 ${S.nameAuto && S.nameAuto[l] && S.nameAuto[l] === S.name[l] ? '<small>· 자동으로 넣었어요, 확인해주세요</small>' : ''}</label><input class="t" data-tr="name" data-l="${l}" value="${esc(S.name[l] || '')}">
           <label class="f">직함</label><input class="t" data-tr="title" data-l="${l}" value="${esc(S.title[l] || '')}">
           <label class="f">회사명</label><input class="t" data-tr="company" data-l="${l}" value="${esc(S.company[l] || '')}">
           ${COPY_FIELDS.map(([k, label]) => `<label class="f">${label}</label><textarea class="t" data-tr="${k}" data-l="${l}">${esc(copyOf(l)[k])}</textarea>`).join('')}
@@ -507,7 +508,7 @@ const AFTER = {
     });
     document.querySelectorAll('[data-tr]').forEach(i => i.oninput = () => {
       const l = i.dataset.l, f = i.dataset.tr;
-      if (f === 'title' || f === 'company') S[f][l] = i.value; else copyOf(l)[f] = f === 'specialties' ? splitLines(i.value) : i.value;
+      if (f === 'title' || f === 'company' || f === 'name') S[f][l] = i.value; else copyOf(l)[f] = f === 'specialties' ? splitLines(i.value) : i.value;
       save(); if (previewLang === l) drawPreview(l);
     });
     const rt = $('retrBtn'); if (rt) rt.onclick = () => translateAll(true);
@@ -536,8 +537,8 @@ function fmtPhone(v) {
 function fail(msg) { const e = $('err'); if (e) e.textContent = msg; else toast(msg); return false; }
 const CHECK = {
   2() {
-    const miss = S.langs.find(l => !(S.name[l] || '').trim());
-    if (miss) return fail(`${AC_LANGS[miss]} 이름을 적어주세요`);
+    // 기본 언어 이름만 필수 — 다른 언어 이름은 번역 단계에서 AI가 표기를 넣고, 틀리면 본인이 고침
+    if (!(S.name[base()] || '').trim()) return fail(`${AC_LANGS[base()]} 이름을 적어주세요`);
     return true;
   },
   3() {
@@ -597,7 +598,7 @@ async function aiDraft() {
 async function translateAll(force) {
   const extras = S.langs.slice(1); if (!extras.length) return;
   const b = base(), c = copyOf(b);
-  const texts = { title: S.title[b] || '', company: S.company[b] || '' };
+  const texts = { name: S.name[b] || '', title: S.title[b] || '', company: S.company[b] || '' };
   COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || ''; });
   texts.specialties = (c.specialties || []).join('\n');
   const key = JSON.stringify([texts, extras]);
@@ -609,6 +610,9 @@ async function translateAll(force) {
     for (const l of extras) {
       const x = r[l]; if (!x) continue;
       S.title[l] = x.title; S.company[l] = x.company || texts.company;
+      // 다른 언어 이름: 비어 있거나 전에 자동으로 넣은 그대로일 때만 채움(본인이 고친 이름은 유지)
+      S.nameAuto = S.nameAuto || {};
+      if (x.name && (!(S.name[l] || '').trim() || S.name[l] === S.nameAuto[l])) { S.name[l] = x.name; S.nameAuto[l] = x.name; }
       S.copy[l] = {}; COPY_FIELDS.forEach(([k]) => { S.copy[l][k] = x[k] || ''; });
       S.copy[l].specialties = splitLines(x.specialties);
     }

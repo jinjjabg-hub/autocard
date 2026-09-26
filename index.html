@@ -164,7 +164,8 @@ function blankState() {
   return {
     step: 0, cardId: null, status: 'draft', createdAt: 0, ref: '',
     mode: '', auto: {},   // mode: 'import'(이미지 명함으로 시작) | 'manual'. auto: 이미지에서 자동으로 채운 칸(확인 전)
-    langs: [UI],   // 처음 기본 언어 = 화면 언어(외국인은 자기 언어로 바로 시작, 목록에 없는 언어도)
+    langs: [UI],   // 명함 언어 목록. 첫 번째 = 기본 언어(명함을 열면 처음 보이는 언어)
+    src: UI,       // 입력 언어(직접 적는 언어) = 화면 언어. 문구는 여기에 적고 명함의 다른 언어로 번역. 명함 언어에 없어도 됨
     name: {}, title: {}, company: {}, nameAuto: {},   // nameAuto: 번역 때 자동으로 넣은 다른 언어 이름(본인이 고치면 덮어쓰지 않음)
     phone: '', phone2: '', email: '', links: [], chapter: '', showChapter: true,
     answers: { work: '', customer: '', referral: '' },
@@ -175,7 +176,7 @@ function blankState() {
   };
 }
 let S = blankState();
-try { const raw = localStorage.getItem(STORE_KEY); if (raw) S = Object.assign(blankState(), JSON.parse(raw)); } catch (e) {}
+try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const o = JSON.parse(raw); S = Object.assign(blankState(), o); if (!o.src) { const has = l => S.name[l] || S.title[l] || (S.copy[l] && S.copy[l].slogan); S.src = S.langs.includes(UI) && has(UI) ? UI : S.langs[0]; } } } catch (e) {}   // 예전 초안: 화면 언어 칸에 적혀 있으면 그걸, 아니면 기본 언어 칸을 입력 언어로
 const qs = new URLSearchParams(location.search);
 if (!S.ref && qs.get('ref')) S.ref = qs.get('ref').slice(0, 40);   // 어떤 명함을 보고 왔는지 → 확산 측정용
 
@@ -192,6 +193,7 @@ function save() {
   }
 }
 const base = () => S.langs[0];
+const W = () => S.src || base();   // 입력 언어
 const $ = id => document.getElementById(id);
 const esc = acEsc;
 function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2600); }
@@ -216,6 +218,7 @@ function cardData() {   // 렌더러·Firestore에 넘기는 명함 데이터 (�
     answers: S.answers, copy: onlyLangs(S.copy), images: S.images,
     design: { tpl: S.design.tpl, colorMode: S.design.colorMode, main: S.design.main, sub: S.design.sub, point: S.design.point, photo: S.design.photo || 'small', ...(AC_FONTS[S.design.font] ? { font: S.design.font } : {}) },
     price: acPrice(S.langs),
+    src: W(),   // 입력 언어 — 명함 화면이 다른 언어 칸을 이 언어의 답변으로 메우지 않게
   };
 }
 
@@ -277,19 +280,19 @@ const VIEWS = {
   },
   2() {
     return `<h2>${t('name_h')}</h2>
-      <p class="lead">${t('name_p')}</p>
-      ${S.langs.map(l => { const k = l === base() ? 'name' : ''; return `<label class="f">${t('name_l')} <small>· ${AC_LANGS[l]}${l === base() ? '' : ' · ' + t('optional')}</small></label>
-        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${l === base() ? (NAME_PH[l] || NAME_PH.en) : t('name_auto_ph', { ex: NAME_PH[l] || NAME_PH.en })}" autocomplete="${l === base() ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
+      <p class="lead">${t('name_p', { lang: AC_LANGS[W()] })}</p>
+      ${[W(), ...S.langs.filter(l => l !== W())].map(l => { const me = l === W(), k = me ? 'name' : ''; return `<label class="f">${t('name_l')} <small>· ${AC_LANGS[l]}${me ? (S.langs.includes(l) ? '' : ' · ' + t('src_tag')) : ' · ' + t('optional')}</small></label>
+        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${me ? (NAME_PH[l] || NAME_PH.en) : t('name_auto_ph', { ex: NAME_PH[l] || NAME_PH.en })}" autocomplete="${me ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
       <label class="f">${t('title_l')} <small>· ${t('title_ex')}</small></label>
-      <input class="t${autoCls('title')}" data-auto="title" id="title" value="${esc(S.title[base()] || '')}" placeholder="${t('title_ph')}" autocomplete="organization-title">${autoHint('title')}
-      ${S.langs.length > 1 ? `<p class="hint">${t('title_tr')}</p>` : ''}
+      <input class="t${autoCls('title')}" data-auto="title" id="title" value="${esc(S.title[W()] || '')}" placeholder="${t('title_ph')}" autocomplete="organization-title">${autoHint('title')}
+      ${S.langs.some(l => l !== W()) ? `<p class="hint">${t('title_tr')}</p>` : ''}
       <div class="err" id="err"></div>`;
   },
   3() {
     return `<h2>${t('contact_h')}</h2>
       <p class="lead">${t('contact_p')}</p>
       <label class="f">${t('company_l')} <small>· ${t('optional')}</small></label>
-      <input class="t${autoCls('company')}" data-auto="company" id="company" value="${esc(S.company[base()] || '')}" placeholder="${t('company_ph')}" autocomplete="organization">${autoHint('company')}
+      <input class="t${autoCls('company')}" data-auto="company" id="company" value="${esc(S.company[W()] || '')}" placeholder="${t('company_ph')}" autocomplete="organization">${autoHint('company')}
       <label class="f">${t('mobile_l')}</label>
       <input class="t${autoCls('phone')}" data-auto="phone" id="phone" type="tel" inputmode="tel" value="${esc(S.phone)}" placeholder="010-0000-0000" autocomplete="tel">${autoHint('phone')}
       <label class="f">${t('office_l')} <small>· ${t('office_sub')}</small></label>
@@ -309,7 +312,7 @@ const VIEWS = {
       <div class="err" id="err"></div>`;
   },
   4() {
-    const c = copyOf(base());
+    const c = copyOf(W());
     return `<h2>${t('work_h')}</h2>
       <p class="lead">${t('work_p')}</p>
       ${S.mode === 'import' && !S.answers.referral.trim() ? `<div class="callout">${t('import_callout')}</div>` : ''}
@@ -353,7 +356,7 @@ const VIEWS = {
       ${S.images.profile ? `<label class="f" style="margin-top:22px">${t('photo_l')}</label>
       <div class="seg">${[['large', t('ph_large')], ['small', t('ph_small')]].map(([k, n]) => `<button type="button" class="${(d.photo || 'small') === k ? 'on' : ''}" data-ph="${k}">${n}</button>`).join('')}</div>` : ''}
       <label class="f" style="margin-top:22px">${t('font_l')} <small>· ${t('font_sub')}</small></label>
-      <div class="fonts">${Object.entries(AC_FONTS).map(([k, f]) => `<button type="button" class="fontbtn ${curFont() === k ? 'on' : ''}" data-font="${k}" style="font-family:${FONT_FAMILY[k]}"><b>${esc(S.name[base()] || NAME_PH[base()] || '홍길동')}</b><small>${t('font_' + k).replace('|', ' · ')}</small></button>`).join('')}</div>
+      <div class="fonts">${Object.entries(AC_FONTS).map(([k, f]) => `<button type="button" class="fontbtn ${curFont() === k ? 'on' : ''}" data-font="${k}" style="font-family:${FONT_FAMILY[k]}"><b>${esc(S.name[W()] || S.name[base()] || NAME_PH[base()] || NAME_PH.en)}</b><small>${t('font_' + k).replace('|', ' · ')}</small></button>`).join('')}</div>
       <label class="f" style="margin-top:22px">${t('color_l')}</label>
       ${S.auto && S.auto.style ? `<div class="autohint" style="margin-bottom:8px">${t('style_hint')}</div>` : ''}
       <div class="seg">${[...(S.imgStyle ? [['image', t('cm_image')]] : []), ['preset', t('cm_preset')], ['random', t('cm_random')], ['custom', t('cm_custom')]].map(([k, n]) => `<button type="button" class="${d.colorMode === k ? 'on' : ''}" data-cm="${k}">${n}</button>`).join('')}</div>
@@ -366,14 +369,13 @@ const VIEWS = {
   7() {
     if (S.status !== 'draft') return doneView();
     if (!S.langs.includes(previewLang)) previewLang = base();
-    const extras = S.langs.slice(1);
-    const bl = { lang: AC_LANGS[base()] };
+    const extras = S.langs.filter(l => l !== W());   // 입력 언어에서 번역되는 명함 언어
+    const bl = { lang: AC_LANGS[W()] };
     return `<h2>${t('prev_h')}</h2>
       <p class="lead">${t('prev_p')}</p>
-      ${hangulInBase() ? `<div class="callout" id="langWarn"><b>${t('lw_h', bl)}</b><br>
-        ${t('lw_p')} ${S.langs.includes('ko') ? t('lw_ko', bl) : t('lw_tr', bl)}
-        <button type="button" class="btn brand wide" id="fixLangBtn" style="margin-top:10px">${S.langs.includes('ko') ? t('lw_btn_ko') : t('lw_btn_tr', bl)}</button></div>` : ''}
-      ${extras.length ? `<div class="tabs" id="tabs">${S.langs.map(l => `<button type="button" class="chip ${l === previewLang ? 'on' : ''}" data-pl="${l}">${AC_LANGS[l]}</button>`).join('')}</div>
+      ${hangulInBase() ? `<div class="callout" id="langWarn"><b>${t('lw_h', bl)}</b><br>${t('lw_p')}
+        <button type="button" class="btn brand wide" id="fixLangBtn" style="margin-top:10px">${t('lw_btn_ko')}</button></div>` : ''}
+      ${S.langs.length > 1 || extras.length ? `<div class="tabs" id="tabs">${S.langs.map(l => `<button type="button" class="chip ${l === previewLang ? 'on' : ''}" data-pl="${l}">${AC_LANGS[l]}</button>`).join('')}</div>
         <div class="hint" id="trStatus" style="text-align:center"></div>` : ''}
       <div class="phone"><div class="scr"><div id="preview"></div></div></div>
       ${extras.length ? `<details class="tr card"><summary>${t('tr_check')}</summary>
@@ -420,20 +422,14 @@ function doneView() {
 let previewLang = null;
 function drawPreview(lang) {
   const el = $('preview'); if (!el) return;
-  acRender(el, cardData(), lang || base());
+  acRender(el, cardData(), lang || (S.langs.includes(W()) ? W() : base()));   // 번역 전(6단계까지)은 직접 적은 언어로 미리보기
 }
 
 const AFTER = {
   1() {
     document.querySelectorAll('[data-base]').forEach(b => b.onclick = () => {
-      const k = b.dataset.base, prev = base();
-      S.langs = [k, ...S.langs.filter(l => l !== k)].slice(0, AC_MAX_LANGS);
-      // 기본 언어 = 직접 적는 언어. 이미 적어둔(또는 이미지에서 읽은) 직함·회사·문구는 새 기본 언어 칸으로 따라가게
-      if (prev && prev !== k) {
-        ['title', 'company'].forEach(f => { if (!(S[f][k] || '').trim() && S[f][prev]) S[f][k] = S[f][prev]; });
-        const pc = S.copy[prev], nc = S.copy[k];
-        if (pc && !(nc && [nc.slogan, nc.work, nc.help, nc.referral].some(x => (x || '').trim()))) S.copy[k] = JSON.parse(JSON.stringify(pc));
-      }
+      const k = b.dataset.base;
+      S.langs = [k, ...S.langs.filter(l => l !== k)].slice(0, AC_MAX_LANGS);   // 문구는 입력 언어 칸에 그대로 — 기본 언어는 보여주는 순서만 바꿈
       S.trKey = ''; save(); render();
     });
     document.querySelectorAll('[data-extra]').forEach(b => b.onclick = () => {
@@ -444,10 +440,10 @@ const AFTER = {
   },
   2() {
     document.querySelectorAll('[data-name]').forEach(i => i.oninput = () => { S.name[i.dataset.name] = i.value; if (i.dataset.auto) unauto('name'); save(); });
-    $('title').oninput = e => { S.title[base()] = e.target.value; unauto('title'); save(); };
+    $('title').oninput = e => { S.title[W()] = e.target.value; unauto('title'); save(); };
   },
   3() {
-    $('company').oninput = e => { S.company[base()] = e.target.value; unauto('company'); save(); };
+    $('company').oninput = e => { S.company[W()] = e.target.value; unauto('company'); save(); };
     $('phone').oninput = e => { S.phone = e.target.value; unauto('phone'); save(); };
     $('phone').onblur = e => { S.phone = fmtPhone(e.target.value); e.target.value = S.phone; save(); };
     $('email').oninput = e => { S.email = e.target.value.trim(); unauto('email'); save(); };
@@ -469,8 +465,8 @@ const AFTER = {
   },
   4() {
     document.querySelectorAll('[data-ans]').forEach(t => t.oninput = () => { S.answers[t.dataset.ans] = t.value; unauto(t.dataset.auto); save(); });
-    document.querySelectorAll('[data-copy]').forEach(t => t.oninput = () => { copyOf(base())[t.dataset.copy] = t.value; unauto(t.dataset.copy); save(); });
-    $('specs').oninput = e => { copyOf(base()).specialties = splitLines(e.target.value); unauto('specialties'); save(); };
+    document.querySelectorAll('[data-copy]').forEach(t => t.oninput = () => { copyOf(W())[t.dataset.copy] = t.value; unauto(t.dataset.copy); save(); });
+    $('specs').oninput = e => { copyOf(W()).specialties = splitLines(e.target.value); unauto('specialties'); save(); };
     $('aiBtn').onclick = aiDraft;
     if (S.mode === 'import' && !S.answers.referral.trim()) $('q3').focus({ preventScroll: true });
   },
@@ -482,7 +478,7 @@ const AFTER = {
   6() {
     const d = S.design;
     // 템플릿 썸네일도 실제 렌더러로 그림 → 고른 모습 = 발행되는 모습
-    document.querySelectorAll('[data-thumb]').forEach(el => acRender(el, { ...cardData(), design: { ...d, tpl: el.dataset.thumb } }, base()));
+    document.querySelectorAll('[data-thumb]').forEach(el => acRender(el, { ...cardData(), design: { ...d, tpl: el.dataset.thumb } }, S.langs.includes(W()) ? W() : base()));
     drawPreview();
     document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => { d.tpl = b.dataset.tpl; save(); render(); });
     document.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => { d.photo = b.dataset.ph; save(); render(); });
@@ -546,7 +542,7 @@ function fail(msg) { const e = $('err'); if (e) e.textContent = msg; else toast(
 const CHECK = {
   2() {
     // 기본 언어 이름만 필수 — 다른 언어 이름은 번역 단계에서 AI가 표기를 넣고, 틀리면 본인이 고침
-    if (!(S.name[base()] || '').trim()) return fail(t('e_name', { lang: AC_LANGS[base()] }));
+    if (!(S.name[W()] || '').trim()) return fail(t('e_name', { lang: AC_LANGS[W()] }));
     return true;
   },
   3() {
@@ -557,7 +553,7 @@ const CHECK = {
     return true;
   },
   4() {
-    if (!(copyOf(base()).slogan || '').trim()) return fail(t('e_slogan'));
+    if (!(copyOf(W()).slogan || '').trim()) return fail(t('e_slogan'));
     return true;
   },
 };
@@ -573,35 +569,19 @@ $('prevBtn').onclick = () => { S.step = Math.max(0, S.step - 1); if (S.step === 
 // 기본 언어가 한국어가 아닌데 문구를 한국어로 적은 경우(→ 그 언어 명함에 한국어가 그대로 나감)를 찾아 알려줌
 // 회사명은 한글 상호일 수 있어 제외
 function hangulInBase() {
-  const b = base(); if (b === 'ko') return false;
+  const b = W(); if (b === 'ko') return false;
   const c = copyOf(b);
   return [S.title[b], c.slogan, c.work, c.help, c.referral, ...(c.specialties || [])].some(v => /[가-힣]/.test(v || ''));
 }
-async function fixBaseLang() {
-  const b = base(), btn = $('fixLangBtn');
-  if (S.langs.includes('ko')) {
-    // 한국어를 기본으로: 적어둔 문구를 한국어 칸으로 옮기고, 원래 언어 칸은 비워 번역으로 채움
-    S.title.ko = S.title[b]; S.company.ko = S.company[b]; S.copy.ko = JSON.parse(JSON.stringify(copyOf(b)));
-    S.title[b] = ''; S.copy[b] = {};
-    if (!(S.name.ko || '').trim()) S.name.ko = S.name[b];   // 기본 언어 이름은 비면 안 됨 → 일단 적어둔 이름을 그대로
-    if (/[가-힣]/.test(S.name[b] || '')) S.name[b] = '';   // 한글 이름이었다면 원래 언어 칸은 비워 자동 표기로
-    S.langs = ['ko', ...S.langs.filter(l => l !== 'ko')]; S.trKey = ''; previewLang = 'ko';
-    save(); render(); toast(t('to_ko_done'));
-    return;
-  }
-  // 한국어가 없는 명함: 한국어로 적은 문구를 기본 언어로 번역해서 채움
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('tr_busy');
-  try {
-    const c = copyOf(b), texts = { title: S.title[b] || '', company: S.company[b] || '', specialties: (c.specialties || []).join('\n') };
-    COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || ''; });
-    if (/[가-힣]/.test(S.name[b] || '')) texts.name = S.name[b];
-    const x = (await callWorker('/autocard/translate', { from: 'ko', to: [b], texts }))[b];
-    if (!x) throw new Error(t('tr_none'));
-    if (x.title) S.title[b] = x.title; if (x.company) S.company[b] = x.company; if (texts.name && x.name) S.name[b] = x.name;
-    COPY_FIELDS.forEach(([k]) => { if (x[k]) c[k] = x[k]; });
-    if (x.specialties) c.specialties = splitLines(x.specialties);
-    S.trKey = ''; save(); render(); toast(t('tr_into_done', { lang: AC_LANGS[b] }));
-  } catch (e) { btn.disabled = false; btn.textContent = t('retry'); toast(t('tr_fail', { m: e.message })); }
+// 입력 언어가 한국어가 아닌데 한국어로 적은 경우: 적은 문구를 한국어 칸으로 옮기고 입력 언어를 한국어로(나머지는 번역으로 채움)
+function fixBaseLang() {
+  const b = W(); if (b === 'ko') return;
+  S.title.ko = S.title[b]; S.company.ko = S.company[b]; S.copy.ko = JSON.parse(JSON.stringify(copyOf(b)));
+  if (!(S.name.ko || '').trim()) S.name.ko = S.name[b];
+  S.title[b] = ''; S.copy[b] = {};
+  if (/[가-힣]/.test(S.name[b] || '')) S.name[b] = '';   // 한글 이름이었다면 원래 언어 칸은 비워 자동 표기로
+  S.src = 'ko'; S.trKey = ''; if (!S.langs.includes(previewLang)) previewLang = base();
+  save(); render(); toast(t('to_ko_done'));
 }
 async function callWorker(path, body, timeoutMs = 30000) {
   const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), timeoutMs);
@@ -623,8 +603,8 @@ async function aiDraft() {
   if (!a.work.trim() && !a.customer.trim() && !a.referral.trim()) { $('aiErr').textContent = t('e_q'); return; }
   const btn = $('aiBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('ai_busy'); $('aiErr').textContent = '';
   try {
-    const r = await callWorker('/autocard/draft', { lang: base(), answers: a, name: S.name[base()] || '', title: S.title[base()] || '', company: S.company[base()] || '' });
-    const c = copyOf(base()); COPY_FIELDS.forEach(([k]) => { if (r[k] && !(S.auto && S.auto[k])) c[k] = r[k]; });   // 이미지 명함 원문(예: 슬로건)은 그대로 둠
+    const r = await callWorker('/autocard/draft', { lang: W(), answers: a, name: S.name[W()] || '', title: S.title[W()] || '', company: S.company[W()] || '' });
+    const c = copyOf(W()); COPY_FIELDS.forEach(([k]) => { if (r[k] && !(S.auto && S.auto[k])) c[k] = r[k]; });   // 이미지 명함 원문(예: 슬로건)은 그대로 둠
     save();
     if (S.step === 4) document.querySelectorAll('[data-copy]').forEach(t => { t.value = c[t.dataset.copy]; });
     toast(t('ai_done'));
@@ -637,10 +617,10 @@ async function aiDraft() {
 
 // 추가 언어 번역 — 원문(기본 언어)이 바뀌었을 때만 다시 번역(직접 고친 번역을 함부로 덮어쓰지 않음)
 async function translateAll(force) {
-  const extras = S.langs.slice(1); if (!extras.length) return;
-  const b = base(), c = copyOf(b);
+  const b = W(), extras = S.langs.filter(l => l !== b); if (!extras.length) return;
+  const c = copyOf(b), ANS = { work: 'work', help: 'customer', referral: 'referral' };
   const texts = { name: S.name[b] || '', title: S.title[b] || '', company: S.company[b] || '' };
-  COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || ''; });
+  COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || (ANS[k] && S.answers[ANS[k]]) || ''; });   // 비운 칸은 명함에 대신 나오는 질문 답변을 번역
   texts.specialties = (c.specialties || []).join('\n');
   const key = JSON.stringify([texts, extras]);
   const st = $('trStatus');
@@ -720,7 +700,7 @@ function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); 
 function applyImport(r) {
   // 이미지 한 장 = 새 명함. 이전에 입력하던 내용(다른 사람 문구·답변)이 섞이지 않게 처음 상태에서 시작
   S = Object.assign(blankState(), { ref: S.ref, mode: 'import' });
-  const b = base(), c = copyOf(b), A = S.auto = {};
+  const b = W(), c = copyOf(b), A = S.auto = {};
   const set = (key, cond, fn) => { if (cond) { fn(); A[key] = 1; } };
   set('name', r.name, () => { S.name[b] = r.name; });
   set('title', r.title, () => { S.title[b] = r.title; });
@@ -869,7 +849,7 @@ async function signIn() {
 async function publish() {
   const err = $('err'), btn = $('pubBtn');
   if (!$('agree').checked) { err.textContent = t('agree_need'); return; }
-  if (hangulInBase() && !confirm(t('ko_confirm', { lang: AC_LANGS[base()] }))) return;
+  if (hangulInBase() && !confirm(t('ko_confirm', { lang: AC_LANGS[W()] }))) return;
   err.textContent = ''; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('signing');
   try {
     const user = await signIn();
@@ -942,7 +922,7 @@ function fillUiSelect() { $('uiLang').innerHTML = [...AC_UI_LANGS, ...(acUiIsDyn
 fillUiSelect();
 $('uiLang').onchange = e => {
   acSetUi(e.target.value);
-  if (S.status === 'draft' && S.langs.length === 1 && !(S.name[base()] || '').trim() && !(S.title[base()] || '').trim()) S.langs = [UI];
+  if (S.status === 'draft' && S.langs.length === 1 && !(S.name[W()] || '').trim() && !(S.title[W()] || '').trim()) { S.langs = [UI]; S.src = UI; }   // 아직 아무것도 안 적었으면 명함·입력 언어도 같이
   save(); render();
 };
 // 목록에 없는 언어(예: 인도네시아어)는 처음엔 영어로 보이다가 AI 번역이 오면 다시 그림. 명함에 넣은 그런 언어도 같이 준비

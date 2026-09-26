@@ -130,7 +130,9 @@ function acView(card, lang) {
   const cur = (card.copy && card.copy[lang]) || {}, org = (card.copy && card.copy[base]) || {}, ans = card.answers || {};
   // 필드별로: 이 언어 문구 → 기본 언어 문구 → 질문 답변 원문 순으로 채운다
   // (work·help가 없던 예전 명함도 답변 원문이 대신 나와서 섹션이 비지 않음)
-  const pick = (k, a) => cur[k] || org[k] || (a ? ans[a] || '' : '');
+  // card.src(입력 언어)가 있는 새 명함은 다른 언어 문구로 대신 채우지 않음 — 일본어 명함에 한국어 답변이 섞이지 않게(빈 칸은 번역 단계에서 채워짐)
+  const pick = card.src ? (k, a) => cur[k] || (lang === card.src && a ? ans[a] || '' : '')
+    : (k, a) => cur[k] || org[k] || (a ? ans[a] || '' : '');
   return {
     name: acPick(card.name, lang, card), title: acPick(card.title, lang, card), company: acPick(card.company, lang, card),
     slogan: pick('slogan'), work: pick('work', 'work'), help: pick('help', 'customer'), referral: pick('referral', 'referral'),

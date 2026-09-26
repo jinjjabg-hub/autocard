@@ -158,13 +158,13 @@
 // 상태 — 입력하는 족족 localStorage에 저장 (중간에 나가도 이어서 작성)
 // ===================================================================
 const STORE_KEY = 'autocard_draft_v1';
-const NAME_PH = { ko: '홍길동', en: 'Gildong Hong', ja: '山田 太郎', zh: '洪吉童', vi: 'Hong Gil Dong', mn: 'Хон Гилдон', th: 'สมชาย ใจดี' };
+const NAME_PH = { ko: '홍길동', en: 'Gildong Hong', ja: '山田 太郎', zh: '洪吉童', vi: 'Hong Gil Dong', mn: 'Хон Гилдон', th: 'สมชาย ใจดี', es: 'María García', fr: 'Marie Dupont' };
 
 function blankState() {
   return {
     step: 0, cardId: null, status: 'draft', createdAt: 0, ref: '',
     mode: '', auto: {},   // mode: 'import'(이미지 명함으로 시작) | 'manual'. auto: 이미지에서 자동으로 채운 칸(확인 전)
-    langs: [UI],   // 처음 기본 언어 = 화면 언어(외국인은 자기 언어로 바로 시작)
+    langs: [UI],   // 처음 기본 언어 = 화면 언어(외국인은 자기 언어로 바로 시작, 목록에 없는 언어도)
     name: {}, title: {}, company: {}, nameAuto: {},   // nameAuto: 번역 때 자동으로 넣은 다른 언어 이름(본인이 고치면 덮어쓰지 않음)
     phone: '', phone2: '', email: '', links: [], chapter: '', showChapter: true,
     answers: { work: '', customer: '', referral: '' },
@@ -279,7 +279,7 @@ const VIEWS = {
     return `<h2>${t('name_h')}</h2>
       <p class="lead">${t('name_p')}</p>
       ${S.langs.map(l => { const k = l === base() ? 'name' : ''; return `<label class="f">${t('name_l')} <small>· ${AC_LANGS[l]}${l === base() ? '' : ' · ' + t('optional')}</small></label>
-        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${l === base() ? NAME_PH[l] : t('name_auto_ph', { ex: NAME_PH[l] })}" autocomplete="${l === base() ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
+        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${l === base() ? (NAME_PH[l] || NAME_PH.en) : t('name_auto_ph', { ex: NAME_PH[l] || NAME_PH.en })}" autocomplete="${l === base() ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
       <label class="f">${t('title_l')} <small>· ${t('title_ex')}</small></label>
       <input class="t${autoCls('title')}" data-auto="title" id="title" value="${esc(S.title[base()] || '')}" placeholder="${t('title_ph')}" autocomplete="organization-title">${autoHint('title')}
       ${S.langs.length > 1 ? `<p class="hint">${t('title_tr')}</p>` : ''}
@@ -938,12 +938,20 @@ async function refreshStatus() {
 })();
 
 // 화면 언어 선택(오른쪽 위) — 아직 아무것도 안 적었으면 명함 기본 언어도 같이 바꿈
-$('uiLang').innerHTML = AC_UI_LANGS.map(l => `<option value="${l}" ${l === UI ? 'selected' : ''}>${AC_LANGS[l]}</option>`).join('');
+function fillUiSelect() { $('uiLang').innerHTML = [...AC_UI_LANGS, ...(acUiIsDynamic() ? [UI] : [])].map(l => `<option value="${l}" ${l === UI ? 'selected' : ''}>${AC_LANGS[l]}</option>`).join(''); }
+fillUiSelect();
 $('uiLang').onchange = e => {
   acSetUi(e.target.value);
   if (S.status === 'draft' && S.langs.length === 1 && !(S.name[base()] || '').trim() && !(S.title[base()] || '').trim()) S.langs = [UI];
   save(); render();
 };
+// 목록에 없는 언어(예: 인도네시아어)는 처음엔 영어로 보이다가 AI 번역이 오면 다시 그림. 명함에 넣은 그런 언어도 같이 준비
+S.langs.forEach(acRegisterLang);
+const dynLangs = [...new Set([UI, ...S.langs])].filter(l => !AC_UI_LANGS.includes(l));
+if (dynLangs.length) {
+  if (acUiIsDynamic()) setTimeout(() => toast('Translating the screen into ' + AC_LANGS[UI] + '…'), 300);
+  Promise.all(dynLangs.map(l => acLoadLang(l).catch(() => false))).then(() => { fillUiSelect(); render(); });
+}
 render();
 </script>
 </body>

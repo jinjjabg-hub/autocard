@@ -76,6 +76,9 @@ async function load() {
   }
   if (!snap.exists) return showState(t('v_nf_h'), t('v_nf_p'));
   card = snap.data();
+  // 명함에 목록 밖 언어(예: 인도네시아어)가 있거나 보는 사람 화면 언어가 그런 언어면 번역된 버튼 문구를 먼저 준비
+  card.langs.forEach(acRegisterLang);
+  await Promise.all([...new Set([UI, ...card.langs])].filter(l => !AC_UI_LANGS.includes(l)).map(l => acLoadLang(l).catch(() => false)));
   if (card.status !== 'published') {
     $('banner').innerHTML = `<div class="banner">${card.status === 'pending' ? t('v_prev_pending') : t('v_prev_draft')}</div>`;
   }

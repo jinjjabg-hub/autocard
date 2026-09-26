@@ -270,3 +270,22 @@
 .tpl-block .ac-save { width: calc(100% - 40px); background: var(--main); color: var(--on-main); box-shadow: 0 14px 30px -14px var(--main); border-radius: 6px; }
 .tpl-block .ac-sec-connect { padding: 0; }
 .tpl-block .ac-crow { border-radius: 4px; }
+
+/* ===== 7. 챕터 스타일: 파이오니어 — 포스터 공통 틀을 폰 화면에 맞춰 옮김 ===== */
+.tpl-pioneer .ac-hero.ac-pio { height: 440px; overflow: hidden; background: #9BBEE4; color: var(--on-bg); }
+.ac-pio-bg { position: absolute; left: 0; top: 0; bottom: 0; width: 78%; z-index: 0; background: url(pioneer-bg.jpg) left bottom / cover no-repeat; }
+.ac-hero > .ac-pio-arc { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
+.ac-hero > .ac-pio-pill { position: absolute; left: 14px; top: 16px; z-index: 3; display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 3px solid var(--main); border-radius: 999px; padding: 5px 14px 5px 12px; font: 600 13px/1 Georgia, 'Times New Roman', serif; color: #1a1a1a; box-shadow: 0 2px 6px rgba(0,0,0,.15); }
+.ac-pio-pill b { font: 900 17px/1 Arial, sans-serif; color: #CF2030; letter-spacing: -.5px; }
+.ac-hero > .ac-pio-logo { position: absolute; right: 14px; top: 18px; z-index: 3; max-width: 34%; max-height: 64px; object-fit: contain; }
+.ac-hero > .ac-pio-photo { position: absolute; left: 0; bottom: 0; z-index: 2; width: 58%; height: 76%; object-fit: cover; object-position: center top;
+  /* 네모 사진의 위·오른쪽 가장자리를 흐리게 → 배경 위에 서 있는 것처럼(포스터의 인물 합성 느낌) */
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22%), linear-gradient(to right, #000 68%, transparent); -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent, #000 22%), linear-gradient(to right, #000 68%, transparent); mask-composite: intersect; }
+.ac-hero > .ac-pio-photo.ac-initial { display: flex; align-items: center; justify-content: center; width: 42%; height: 46%; left: 6%; bottom: 8%; border-radius: 50%; background: var(--main); color: var(--on-main); font: 800 64px/1 var(--f-head); -webkit-mask-image: none; mask-image: none; }
+.ac-hero > .ac-pio-id { position: absolute; right: 16px; bottom: 26px; z-index: 3; width: 44%; text-align: left; color: var(--on-bg); }
+.ac-pio-id h1 { margin: 0; font: 800 34px/1.12 var(--f-head); letter-spacing: .06em; word-break: keep-all; color: var(--on-bg); }
+.ac-pio-id .ac-name2 { margin-top: 4px; color: var(--accent-bg); }
+.ac-pio-id .ac-role { margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--on-bg); opacity: .85; }
+.ac-pio-id .ac-rule { display: block; width: 100%; height: 2px; margin-top: 12px; background: var(--main); }
+.tpl-pioneer .ac-main { background: var(--bg); }

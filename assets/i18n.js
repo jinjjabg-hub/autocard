@@ -164,6 +164,7 @@ const AC_T = {
   tpl_magazine: ['매거진 에디토리얼형', 'Magazine editorial', 'マガジン', '杂志风', 'Tạp chí', 'Сэтгүүл', "นิตยสาร", "Editorial de revista", "Éditorial magazine"],
   tpl_dark: ['다크 프리미엄형', 'Dark premium', 'ダークプレミアム', '暗色高级', 'Tối cao cấp', 'Бараан тансаг', "ดาร์กพรีเมียม", "Oscuro premium", "Sombre premium"],
   tpl_block: ['컬러 블록형', 'Color block', 'カラーブロック', '色块', 'Khối màu', 'Өнгөт блок', "บล็อกสี", "Bloques de color", "Blocs de couleur"],
+  tpl_pioneer: ["파이오니어 챕터", "Pioneer chapter", "パイオニア・チャプター", "Pioneer 分会", "Chapter Pioneer", "Pioneer бүлэг", "แชปเตอร์ Pioneer", "Capítulo Pioneer", "Chapitre Pioneer"],
   preset0: ['네이비 클래식', 'Navy classic', 'ネイビークラシック', '海军蓝经典', 'Navy cổ điển', 'Хар хөх сонгодог', "กรมท่าคลาสสิก", "Marino clásico", "Marine classique"],
   preset1: ['포레스트', 'Forest', 'フォレスト', '森林', 'Rừng xanh', 'Ой', "ป่าเขียว", "Bosque", "Forêt"],
   preset2: ['버건디', 'Burgundy', 'バーガンディ', '酒红', 'Đỏ rượu', 'Бургунди', "เบอร์กันดี", "Burdeos", "Bordeaux"],

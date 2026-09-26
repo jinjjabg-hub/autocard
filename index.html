@@ -398,7 +398,7 @@ const VIEWS = {
     const d = S.design, warns = d.colorMode === 'custom' ? acColorWarnings(d) : [];
     return `<h2>${t('design_h')}</h2>
       <p class="lead">${t('design_p')}</p>
-      <div class="tpls">${Object.entries(AC_TEMPLATES).map(([k, n]) => `<button type="button" class="tpl ${d.tpl === k ? 'on' : ''}" data-tpl="${k}"><div class="thumb"><div data-thumb="${k}"></div></div><span>${t('tpl_' + k)}</span></button>`).join('')}</div>
+      <div class="tpls">${Object.entries(AC_TEMPLATES).filter(([k]) => !CHAPTER_TPL[k] || d.tpl === k || CHAPTER_TPL[k].test(S.chapter || '')).map(([k, n]) => `<button type="button" class="tpl ${d.tpl === k ? 'on' : ''}" data-tpl="${k}"><div class="thumb"><div data-thumb="${k}"></div></div><span>${t('tpl_' + k)}</span></button>`).join('')}</div>
       ${S.images.profile ? `<label class="f" style="margin-top:22px">${t('photo_l')}</label>
       <div class="seg">${[['large', t('ph_large')], ['small', t('ph_small')]].map(([k, n]) => `<button type="button" class="${(d.photo || 'small') === k ? 'on' : ''}" data-ph="${k}">${n}</button>`).join('')}</div>` : ''}
       <label class="f" style="margin-top:22px">${t('font_l')} <small>· ${t('font_sub')}</small></label>
@@ -577,6 +577,9 @@ const AFTER = {
 
 // 글꼴: 사용자가 고르지 않았으면 템플릿 기본 글꼴
 const FONT_FAMILY = { modern: "'Pretendard Variable',Pretendard,sans-serif", classic: "'Noto Serif KR',serif", elegant: "'Gowun Batang',serif", soft: "'Gowun Dodum',sans-serif", bold: "'Black Han Sans',sans-serif" };
+// 챕터 전용 스타일: 그 챕터 멤버(챕터 칸이 맞을 때)에게만 보이고, 이미지로 시작하면 자동 선택
+const CHAPTER_TPL = { pioneer: /pioneer|파이오니어/i };
+const PIONEER_COLORS = { main: '#0065A7', sub: '#FFFFFF', point: '#C8102E' };   // 포스터 곡선 파랑 + 흰 면 + BNI 빨강
 const curFont = () => AC_FONTS[S.design.font] ? S.design.font : AC_TPL_FONT[S.design.tpl];
 function setPreset(i) { const p = AC_PRESETS[i]; Object.assign(S.design, { presetIdx: i, main: p[1], sub: p[2], point: p[3] }); }
 // 랜덤: 추천 조합 안에서만, 직전 조합은 제외
@@ -792,6 +795,12 @@ function applyImport(r) {
   if (st.main) { S.imgStyle = acFixColors(st); Object.assign(S.design, S.imgStyle, { colorMode: 'image' }); A.style = 1; }
   if (st.tpl) S.design.tpl = st.tpl;
   if (st.font) S.design.font = st.font;
+  // 파이오니어 챕터 포스터 → 챕터 공통 틀. 멤버 개성은 포스터에서 뽑은 브랜드 색을 강조색으로
+  if (CHAPTER_TPL.pioneer.test(r.chapter || '')) {
+    S.design.tpl = 'pioneer'; S.design.font = 'modern';
+    Object.assign(S.design, PIONEER_COLORS, S.imgStyle ? { point: S.imgStyle.main } : {}, { colorMode: 'custom' });
+    const fixed = acFixColors(S.design); Object.assign(S.design, fixed);
+  }
   save();
 }
 function finishImport() {

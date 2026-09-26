@@ -57,11 +57,11 @@ function acLoadFont(key) {   // 고른 글꼴만 그때그때 불러옴(페이�
   });
 }
 // 템플릿별 기본 글꼴(사용자가 고르지 않았을 때)
-const AC_TPL_FONT = { minimal: 'modern', split: 'modern', badge: 'soft', magazine: 'classic', dark: 'modern', block: 'bold' };
+const AC_TPL_FONT = { minimal: 'modern', split: 'modern', badge: 'soft', magazine: 'classic', dark: 'modern', block: 'bold', pioneer: 'modern' };
 
 const AC_TEMPLATES = {
   minimal: '미니멀 센터형', split: '대각선 스플릿형', badge: '플로팅 배지형',
-  magazine: '매거진 에디토리얼형', dark: '다크 프리미엄형', block: '컬러 블록형',
+  magazine: '매거진 에디토리얼형', dark: '다크 프리미엄형', block: '컬러 블록형', pioneer: '파이오니어 챕터',
 };
 
 function acHexRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
@@ -100,7 +100,9 @@ function acFixColors(c) {
   if (acContrast(main, sub) < 1.5) main = readable(away(main, sub, 1.5));
   if (acContrast(point, sub) < 2) point = readable(away(point, sub, 2));
   // 메인과 포인트가 거의 같은 색이면(예: 금색+금색) 포인트가 강조 역할을 못 함 → 메인을 바탕 반대쪽으로 진하게/연하게 한 톤을 포인트로
-  if (acContrast(main, point) < 1.4) point = readable(acMix(main, acLum(sub) > 0.4 ? '#000000' : '#FFFFFF', 0.45));
+  // 밝기만 비슷한 게 아니라 색(색상)까지 비슷할 때만 — 파랑·분홍처럼 밝기가 같아도 색이 다르면 그대로 둠
+  const dist = (x, y) => { const [a1, b1, c1] = acHexRgb(x), [a2, b2, c2] = acHexRgb(y); return Math.hypot(a1 - a2, b1 - b2, c1 - c2); };
+  if (acContrast(main, point) < 1.4 && dist(main, point) < 90) point = readable(acMix(main, acLum(sub) > 0.4 ? '#000000' : '#FFFFFF', 0.45));
   return { main, sub, point };
 }
 
@@ -144,6 +146,7 @@ function acView(card, lang) {
     // 이름 아래 작은 보조 이름: 지금 언어가 아닌 영어(없으면 기본 언어) 이름
     name2: (() => { const n = card.name || {}, cur = acPick(n, lang, card); const alt = lang !== 'en' ? n.en : n[base]; return alt && alt !== cur ? alt : ''; })(),
     chapter: card.chapter && card.showChapter !== false ? (AC_UI[lang] || AC_UI.en).chapter.replace('{c}', card.chapter) : '',
+    chapterRaw: card.chapter || '',
     // 인물 사진을 상단에 크게 (BNI 이미지 명함들의 공통점). 예전 명함은 design.photo가 없으므로 작은 사진 그대로
     large: !!((card.images || {}).profile && (card.design || {}).photo === 'large'),
   };
@@ -278,6 +281,19 @@ const AC_TPL = {
     return `${acTop(v, acIdentity(v, { avatar: !v.large && !v.second, slogan: true }))}${acBody(v, { noSlogan: true })}`;
   },
   // 6. 컬러 블록형 — 사진 → 메인색 이름 블록 → 강조색 한 줄 소개 → 섹션마다 색 면 교차
+  // 7. 챕터 스타일: 파이오니어 — 챕터 포스터 공통 틀(빌딩 사진 + 파란 곡선 + BNI 알약 로고 + 왼쪽 아래 인물)
+  //    안쪽 내용은 입력한 만큼 아래로 자동 배치. 곡선 = 메인색, 흰 면 = 바탕색, 멤버 개성 = 강조색
+  pioneer(v) {
+    const logo = v.second && v.secondType === 'logo' ? `<img class="ac-pio-logo" src="${acEsc(v.second)}" alt="">` : '';
+    return `<header class="ac-hero ac-pio">
+        <div class="ac-pio-bg"></div>
+        <svg class="ac-pio-arc" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M90,0 C62,6 30,34 6,100 L100,100 L100,0 Z" fill="var(--bg)"/><path d="M90,0 C62,6 30,34 6,100" fill="none" stroke="var(--main)" stroke-width="3.2" vector-effect="non-scaling-stroke"/></svg>
+        <span class="ac-pio-pill"><b>BNI</b>${acEsc(v.chapterRaw ? v.chapterRaw.replace(/\s+/g, '_') + '_Chapter' : 'Chapter')}</span>
+        ${logo}
+        ${v.profile ? `<img class="ac-pio-photo" src="${acEsc(v.profile)}" alt="${acEsc(v.name)}">` : `<div class="ac-pio-photo ac-initial">${acEsc((v.name || '?').charAt(0))}</div>`}
+        <div class="ac-pio-id"><h1>${acEsc(v.name)}</h1>${v.name2 ? `<div class="ac-name2">${acEsc(v.name2)}</div>` : ''}<div class="ac-role">${acRole(v)}</div><i class="ac-rule"></i></div>
+      </header>${acBody(v)}`;
+  },
   block(v) {
     return `${v.large ? `<div class="ac-bigwrap">${acBig(v)}</div>` : ''}<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}${acIdentity(v, { avatar: !v.large })}</header>
       ${v.slogan ? `<div class="ac-band"><p>${acEsc(v.slogan)}</p></div>` : ''}${acBody(v, { noSlogan: true })}`;

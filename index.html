@@ -126,6 +126,12 @@
   .callout { background: #EEF3FA; border-left: 4px solid var(--brand); padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.6; margin: 6px 0 4px; }
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 13px; z-index: 60; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
   .toast.on { opacity: 1; }
+  .mine { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .mine small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .mine .btn { padding: 10px 14px; font-size: 13.5px; text-decoration: none; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 2px 8px; margin-top: 6px; background: #eee; color: #555; }
+  .st-published { background: #E3F4EA; color: #1d7a4f; } .st-pending { background: #FFF4D6; color: #6A4B00; }
+  .linkbtn { border: 0; background: none; color: var(--brand); font-weight: 700; text-decoration: underline; padding: 0; margin-top: 6px; cursor: pointer; font-size: 13px; }
   .uisel { border: 1.5px solid var(--line); background: var(--paper); border-radius: 999px; padding: 5px 8px; font-size: 12.5px; font-weight: 700; color: var(--ink); cursor: pointer; }
 </style>
 </head>
@@ -176,7 +182,15 @@ function blankState() {
   };
 }
 let S = blankState();
-try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const o = JSON.parse(raw); S = Object.assign(blankState(), o); if (!o.src) { const has = l => S.name[l] || S.title[l] || (S.copy[l] && S.copy[l].slogan); S.src = S.langs.includes(UI) && has(UI) ? UI : S.langs[0]; } } } catch (e) {}   // 예전 초안: 화면 언어 칸에 적혀 있으면 그걸, 아니면 기본 언어 칸을 입력 언어로
+// 발행한 명함 수정은 따로 저장(EDIT_KEY) → 새로 만들던 초안(STORE_KEY)을 덮어쓰지 않음
+const EDIT_KEY = 'autocard_edit_v1';
+function loadDraft() {
+  let st = blankState();
+  try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const o = JSON.parse(raw); st = Object.assign(blankState(), o); if (!o.src) { const has = l => st.name[l] || st.title[l] || (st.copy[l] && st.copy[l].slogan); st.src = st.langs.includes(UI) && has(UI) ? UI : st.langs[0]; } } } catch (e) {}   // 예전 초안: 화면 언어 칸에 적혀 있으면 그걸, 아니면 기본 언어 칸을 입력 언어로
+  return st;
+}
+S = loadDraft();
+try { const e = localStorage.getItem(EDIT_KEY); if (e) S = Object.assign(blankState(), JSON.parse(e)); } catch (e) {}   // 수정하다 나갔으면 이어서
 const qs = new URLSearchParams(location.search);
 if (!S.ref && qs.get('ref')) S.ref = qs.get('ref').slice(0, 40);   // 어떤 명함을 보고 왔는지 → 확산 측정용
 
@@ -185,10 +199,11 @@ const IMP = { stage: null, img: '', w: 0, h: 0, result: null, crop: null, error:
 const splitLines = v => String(v || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 8);
 let saveWarned = false;
 function save() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
+  const STORE = S.editing ? EDIT_KEY : STORE_KEY;
+  try { localStorage.setItem(STORE, JSON.stringify(S)); }
   catch (e) {
     // 사진 때문에 용량이 넘치면 사진만 빼고라도 저장
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ ...S, images: { ...S.images, profile: '', second: '' } })); } catch (e2) {}
+    try { localStorage.setItem(STORE, JSON.stringify({ ...S, images: { ...S.images, profile: '', second: '' } })); } catch (e2) {}
     if (!saveWarned) { saveWarned = true; toast(t('save_warn')); }
   }
 }
@@ -236,16 +251,18 @@ function render() {
   $('price').textContent = acWon(acPrice(S.langs));
   $('bar').style.width = (S.step / 7 * 100) + '%';
   $('stepname').textContent = S.step ? `${S.step} / 7 · ${t('step' + S.step)}` : t('start');
-  $('prevBtn').style.visibility = S.step >= 1 && S.status === 'draft' ? 'visible' : 'hidden';
+  $('prevBtn').style.visibility = S.step >= (S.editing ? 3 : 1) && (S.status === 'draft' || S.editing) ? 'visible' : 'hidden';   // 수정은 2단계부터(언어는 결제와 연결돼 못 바꿈)
   $('nextBtn').style.display = S.step >= 1 && S.step < 7 ? '' : 'none';
   document.querySelector('nav.bottom').style.display = S.step === 0 ? 'none' : '';
-  $('screen').innerHTML = VIEWS[S.step]();
+  $('screen').innerHTML = (S.editing && S.step >= 2 ? editBanner() : '') + VIEWS[S.step]();
   (AFTER[S.step] || (() => {}))();
+  if ($('editCancel')) $('editCancel').onclick = () => { if (confirm(t('edit_cancel_confirm'))) exitEdit(); };
   window.scrollTo(0, 0);
 }
 
 const VIEWS = {
   0() {
+    if (MINE) return mineView();
     if (IMP.stage === 'reading') return `<h2>${t('reading_h')}</h2>
       <div class="reading"><img src="${IMP.img}" alt=""><p><span class="spinner"></span>${t('reading_p')}</p></div>`;
     if (IMP.stage === 'photo') return `<h2>${t('photo_h')}</h2>
@@ -261,7 +278,8 @@ const VIEWS = {
       ${IMP.stage === 'error' ? `<div class="err">${esc(IMP.error)}</div>${IMP.limited ? `<button type="button" class="btn ghost" id="adminLogin" style="margin-top:8px">${t('admin_retry')}</button>` : ''}` : ''}
       <button type="button" class="startcard rec" id="startImport"><b>${t('imp_title')} <em>${t('imp_badge')}</em></b>
         <span>${t('imp_desc')}</span></button>
-      <button type="button" class="startcard" id="startManual"><b>${t('man_title')}</b><span>${t('man_desc')}</span></button>`;
+      <button type="button" class="startcard" id="startManual"><b>${t('man_title')}</b><span>${t('man_desc')}</span></button>
+      <button type="button" class="startcard" id="startMine" style="background:transparent"><b>${t('mine_title')}</b><span>${t('mine_desc')}</span></button>`;
   },
   1() {
     const extras = S.langs.slice(1);
@@ -367,7 +385,7 @@ const VIEWS = {
       <div class="phone"><div class="scr"><div id="preview"></div></div></div>`;
   },
   7() {
-    if (S.status !== 'draft') return doneView();
+    if (S.status !== 'draft' && !S.editing) return doneView();
     if (!S.langs.includes(previewLang)) previewLang = base();
     const extras = S.langs.filter(l => l !== W());   // 입력 언어에서 번역되는 명함 언어
     const bl = { lang: AC_LANGS[W()] };
@@ -386,7 +404,7 @@ const VIEWS = {
           ${COPY_FIELDS.map(([k, label]) => `<label class="f">${t(label)}</label><textarea class="t" data-tr="${k}" data-l="${l}">${esc(copyOf(l)[k])}</textarea>`).join('')}
           <label class="f">${t('specs_l')} <small>· ${t('specs_sub2')}</small></label><textarea class="t" data-tr="specialties" data-l="${l}">${esc((copyOf(l).specialties || []).join('\n'))}</textarea></div>`).join('')}
         <button type="button" class="btn ghost wide" id="retrBtn" style="margin-top:14px">${t('retr')}</button></details>` : ''}
-      <div class="card">
+      ${S.editing ? `<div class="card"><button type="button" class="btn brand wide" id="saveBtn">${t('save_changes')}</button><div class="err" id="err"></div></div>` : `<div class="card">
         <div class="pricebox"><span>${t('pay_l', { n: S.langs.length })}</span><b>${acWon(acPrice(S.langs))}</b></div>
         <button type="button" class="btn ghost wide" disabled style="margin-top:12px">${t('pay_btn')}</button>
         <p class="hint">${t('pay_hint')}</p>
@@ -394,7 +412,7 @@ const VIEWS = {
         ${IN_APP ? `<div class="inapp" style="margin-top:12px">${t('inapp2')}</div>` : ''}
         <button type="button" class="btn brand wide" id="pubBtn" style="margin-top:14px">${t('pub_btn')}</button>
         <div class="err" id="err"></div>
-      </div>`;
+      </div>`}`;
   },
 };
 
@@ -407,6 +425,7 @@ function doneView() {
       <p class="lead">${live ? t('done_live_p') : t('done_pend_p')}</p>
       <div class="linkbox"><input class="t" readonly value="${esc(url)}" id="myUrl"><button type="button" class="btn" id="copyBtn">${t('copy')}</button></div>
       <a class="btn ghost wide" style="margin-top:10px;text-decoration:none" href="${esc(url)}" target="_blank">${t('open_card')}</a>
+      <button type="button" class="btn wide" id="editThis" style="margin-top:10px">${t('edit_this')}</button>
       <div class="card" style="text-align:left">
         <b style="font-size:14px">${t('cb_h')}</b>
         <p class="hint" style="font-size:13px">${t('cb_p')}</p>
@@ -457,11 +476,17 @@ const AFTER = {
     const add = $('addLink'); if (add) add.onclick = () => { S.links.push({ label: '', url: '' }); save(); render(); };
   },
   0() {
+    if (MINE) {
+      document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editCard(b.dataset.edit));
+      if ($('mineBack')) $('mineBack').onclick = () => { MINE = null; render(); };
+      return;
+    }
     if (IMP.stage === 'photo') return setupCrop();
     if (IMP.stage === 'reading') return;
     $('startImport').onclick = () => { $('importInput').value = ''; $('importInput').click(); };
     if ($('adminLogin')) $('adminLogin').onclick = adminLogin;
     $('startManual').onclick = () => { S.mode = 'manual'; S.step = 1; IMP.stage = null; save(); render(); };
+    $('startMine').onclick = openMine;
   },
   4() {
     document.querySelectorAll('[data-ans]').forEach(t => t.oninput = () => { S.answers[t.dataset.ans] = t.value; unauto(t.dataset.auto); save(); });
@@ -496,7 +521,8 @@ const AFTER = {
     document.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => { d[b.dataset.sw] = b.dataset.c; save(); render(); });
   },
   7() {
-    if (S.status !== 'draft') {
+    if (S.status !== 'draft' && !S.editing) {
+      $('editThis').onclick = () => editCard(S.cardId);
       $('copyBtn').onclick = async () => { try { await navigator.clipboard.writeText($('myUrl').value); toast(t('copied')); } catch (e) { $('myUrl').select(); } };
       $('newBtn').onclick = () => { if (confirm(t('new_confirm'))) { S = blankState(); IMP.stage = null; save(); render(); } };
       refreshStatus();
@@ -516,7 +542,7 @@ const AFTER = {
       save(); if (previewLang === l) drawPreview(l);
     });
     const rt = $('retrBtn'); if (rt) rt.onclick = () => translateAll(true);
-    $('pubBtn').onclick = publish;
+    if (S.editing) $('saveBtn').onclick = saveEdit; else $('pubBtn').onclick = publish;
     translateAll(false);
   },
 };
@@ -561,7 +587,7 @@ $('nextBtn').onclick = () => {
   if (CHECK[S.step] && !CHECK[S.step]()) return;
   S.step = Math.min(7, S.step + 1); save(); render();
 };
-$('prevBtn').onclick = () => { S.step = Math.max(0, S.step - 1); if (S.step === 0) IMP.stage = null; save(); render(); };
+$('prevBtn').onclick = () => { S.step = Math.max(S.editing ? 2 : 0, S.step - 1); if (S.step === 0) IMP.stage = null; save(); render(); };
 
 // ===================================================================
 // AI (Cloudflare Worker cardbook-ai 경유 — API 키는 Worker Secret에만)
@@ -616,13 +642,16 @@ async function aiDraft() {
 }
 
 // 추가 언어 번역 — 원문(기본 언어)이 바뀌었을 때만 다시 번역(직접 고친 번역을 함부로 덮어쓰지 않음)
-async function translateAll(force) {
-  const b = W(), extras = S.langs.filter(l => l !== b); if (!extras.length) return;
+function trPayload() {
+  const b = W(), extras = S.langs.filter(l => l !== b);
   const c = copyOf(b), ANS = { work: 'work', help: 'customer', referral: 'referral' };
   const texts = { name: S.name[b] || '', title: S.title[b] || '', company: S.company[b] || '' };
   COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || (ANS[k] && S.answers[ANS[k]]) || ''; });   // 비운 칸은 명함에 대신 나오는 질문 답변을 번역
   texts.specialties = (c.specialties || []).join('\n');
-  const key = JSON.stringify([texts, extras]);
+  return { b, extras, texts, key: JSON.stringify([texts, extras]) };
+}
+async function translateAll(force) {
+  const { b, extras, texts, key } = trPayload(); if (!extras.length) return;
   const st = $('trStatus');
   if (!force && S.trKey === key) return;
   if (st) st.innerHTML = '<span class="spinner" style="display:inline-block;vertical-align:middle;border-color:#ccc;border-top-color:#333"></span> ' + t('tr_busy');
@@ -829,7 +858,7 @@ function resizeImage(file, max, png) {
 let FB = null;
 function fb() { if (!FB) { FB = acInitFirebase(); FB.storage = firebase.storage(); } return FB; }
 
-async function signIn() {
+async function signIn(kind = 'publish') {
   const { auth } = fb();
   await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
   if (auth.currentUser) return auth.currentUser;
@@ -838,11 +867,83 @@ async function signIn() {
   catch (e) {
     if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') return null;
     if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
-      localStorage.setItem('autocard_resume_publish', '1');   // 돌아오면 이어서 발행
+      localStorage.setItem('autocard_resume', kind);   // 돌아오면 이어서(발행·내 명함 목록·수정 저장)
       await auth.signInWithRedirect(provider);
       return null;
     }
     throw e;
+  }
+}
+
+// ===================================================================
+// 발행 후 수정 — 내 명함 목록 → 2~7단계 그대로 고치기 → 저장하면 바로 반영(언어·가격은 규칙상 잠금)
+// ===================================================================
+let MINE = null;   // null | { loading } | { cards } | { error }
+function mineView() {
+  if (MINE.loading) return `<h2>${t('mine_h')}</h2><p class="lead"><span class="spinner" style="display:inline-block;vertical-align:middle;border-color:#ccc;border-top-color:#333"></span> ${t('mine_loading')}</p>`;
+  const list = MINE.error ? `<div class="err">${esc(t('mine_fail', { m: MINE.error }))}</div>`
+    : !MINE.cards.length ? `<p class="lead">${t('mine_empty')}</p>`
+    : MINE.cards.map(c => { c.langs.forEach(acRegisterLang); return `<div class="card mine"><div><b>${esc(acPick(c.name, UI, c))}</b><small>${esc([acPick(c.title, UI, c), acPick(c.company, UI, c)].filter(Boolean).join(' · '))}</small><small>${c.langs.map(l => AC_LANGS[l]).join(' · ')}</small>
+        <span class="badge st-${c.status}">${t('st_' + c.status)}</span></div>
+        <div class="row">${c.status !== 'draft' ? `<a class="btn ghost" href="${esc(acCardUrl(c.id))}" target="_blank">${t('open_btn')}</a>` : ''}<button type="button" class="btn" data-edit="${esc(c.id)}">${t('edit_btn')}</button></div></div>`; }).join('');
+  return `<h2>${t('mine_h')}</h2>${list}<button type="button" class="btn ghost wide" id="mineBack" style="margin-top:14px">${t('back_start')}</button>`;
+}
+async function openMine() {
+  let user; try { user = await signIn('mine'); } catch (e) { toast(t('login_fail', { m: e.message || e.code })); return; }
+  if (!user) return;
+  MINE = { loading: true }; S.step = 0; render();
+  try {
+    const qs = await fb().db.collection('autocards').where('ownerUid', '==', user.uid).get();
+    MINE = { cards: qs.docs.map(d => ({ id: d.id, ...d.data() })).filter(c => Array.isArray(c.langs)).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)) };
+  } catch (e) { MINE = { error: e.message || e.code }; }
+  render();
+}
+// 명함 문서 → 제작 앱 상태. 발행·승인 대기 명함은 수정 모드(따로 저장), 작성 중(발행 요청 전)은 원래 흐름으로 이어서
+async function editCard(id) {
+  let c = MINE && MINE.cards && MINE.cards.find(x => x.id === id);
+  try {
+    if (!c) { const user = await signIn('mine'); if (!user) return; const snap = await fb().db.collection('autocards').doc(id).get(); if (!snap.exists) return toast(t('v_nf_h')); c = { id, ...snap.data() }; }
+  } catch (e) { return toast(t('mine_fail', { m: e.message || e.code })); }
+  const st = blankState(), editing = c.status !== 'draft';
+  Object.assign(st, { cardId: id, status: c.status, createdAt: c.createdAt || 0, ref: c.referredBy || '', mode: 'edit', editing,
+    langs: c.langs, src: c.src || c.langs[0], name: c.name || {}, title: c.title || {}, company: c.company || {},
+    phone: c.phone || '', phone2: c.phone2 || '', email: c.email || '', links: c.links || [], chapter: c.chapter || '', showChapter: c.showChapter !== false,
+    answers: Object.assign(st.answers, c.answers || {}), copy: c.copy || {}, images: Object.assign(st.images, c.images || {}), design: Object.assign(st.design, c.design || {}),
+    auto: {}, nameAuto: {}, step: editing ? 2 : 7 });
+  if (st.design.colorMode === 'image') st.design.colorMode = 'custom';   // 원본 이미지 색 정보는 저장하지 않으므로 지금 색을 직접 선택으로
+  S = st; MINE = null;
+  S.trKey = trPayload().key;   // 이미 번역돼 있으니 문구를 바꾸기 전에는 다시 번역하지 않음(손으로 고친 번역 보존)
+  S.langs.forEach(acRegisterLang);
+  save(); render();
+  const dyn = S.langs.filter(l => !AC_UI_LANGS.includes(l));
+  if (dyn.length) Promise.all(dyn.map(l => acLoadLang(l).catch(() => false))).then(render);
+}
+function editBanner() {
+  return `<div class="callout" style="margin-bottom:6px">${t('edit_banner', { name: esc(S.name[W()] || S.name[base()] || '') })}
+    <br><small>${t('edit_lang_note', { langs: S.langs.map(l => AC_LANGS[l]).join(' · ') })}</small>
+    <br><button type="button" class="linkbtn" id="editCancel">${t('edit_cancel')}</button></div>`;
+}
+function exitEdit() {
+  try { localStorage.removeItem(EDIT_KEY); } catch (e) {}
+  S = loadDraft(); MINE = null; IMP.stage = null; S.step = 0; render();
+}
+async function saveEdit() {
+  const btn = $('saveBtn'), err = $('err'), spin = '<span class="spinner"></span> ';
+  if (btn) { btn.disabled = true; btn.innerHTML = spin + t('saving'); }
+  if (err) err.textContent = '';
+  try {
+    const user = await signIn('edit'); if (!user) return;
+    const images = await uploadImages(user, S.cardId, m => { if ($('saveBtn')) $('saveBtn').innerHTML = spin + m; });
+    const d = cardData(); delete d.langs; delete d.price;   // 결제와 연결된 항목은 규칙상 못 바꿈
+    await fb().db.collection('autocards').doc(S.cardId).update({ ...d, images, updatedAt: Date.now() });
+    try { localStorage.removeItem(EDIT_KEY); } catch (e) {}
+    S = loadDraft(); toast(t('saved'));
+    openMine();
+  } catch (e) {
+    console.error(e);
+    if ($('err')) $('err').textContent = t('save_fail', { m: e.message || e.code });
+  } finally {
+    if ($('saveBtn')) { $('saveBtn').disabled = false; $('saveBtn').textContent = t('save_changes'); }
   }
 }
 
@@ -864,8 +965,21 @@ async function publish() {
   }
 }
 
+// 새로 고른 사진(data: URL)만 Storage에 올리고 주소로 바꿈 — autocards/{내 uid}/{명함 id}/
+async function uploadImages(user, cardId, progress) {
+  const { storage } = fb(), images = { ...S.images };
+  for (const k of ['profile', 'second']) {
+    if (!images[k] || !images[k].startsWith('data:')) continue;
+    progress(k === 'profile' ? t('pg_profile') : t('pg_second'));
+    const png = images[k].startsWith('data:image/png');
+    const snap = await storage.ref(`autocards/${user.uid}/${cardId}/${k}.${png ? 'png' : 'jpg'}`).putString(images[k], 'data_url', { contentType: png ? 'image/png' : 'image/jpeg', cacheControl: 'public,max-age=31536000' });
+    images[k] = await snap.ref.getDownloadURL();
+  }
+  S.images = images; save();
+  return images;
+}
 async function doPublish(user, progress) {
-  const { db, storage } = fb();
+  const { db } = fb();
   const ref = S.cardId ? db.collection('autocards').doc(S.cardId) : db.collection('autocards').doc();
   const now = Date.now();
   if (!S.createdAt) S.createdAt = now;
@@ -874,15 +988,7 @@ async function doPublish(user, progress) {
   await ref.set({ ownerUid: user.uid, ownerEmail: user.email, status: 'draft', createdAt: S.createdAt, updatedAt: now }, { merge: true });
   S.cardId = ref.id; save();
 
-  const images = { ...S.images };
-  for (const k of ['profile', 'second']) {
-    if (!images[k] || !images[k].startsWith('data:')) continue;
-    progress(k === 'profile' ? t('pg_profile') : t('pg_second'));
-    const png = images[k].startsWith('data:image/png');
-    const snap = await storage.ref(`autocards/${user.uid}/${ref.id}/${k}.${png ? 'png' : 'jpg'}`).putString(images[k], 'data_url', { contentType: png ? 'image/png' : 'image/jpeg', cacheControl: 'public,max-age=31536000' });
-    images[k] = await snap.ref.getDownloadURL();
-  }
-  S.images = images; save();
+  const images = await uploadImages(user, ref.id, progress);
 
   progress(t('pg_send'));
   const data = { ...cardData(), images, ownerUid: user.uid, ownerEmail: user.email, status: 'pending', createdAt: S.createdAt, updatedAt: Date.now() };
@@ -904,13 +1010,17 @@ async function refreshStatus() {
 
 // 팝업이 막혀 redirect 로그인으로 돌아온 경우 이어서 발행
 (async function resume() {
-  if (localStorage.getItem('autocard_resume_publish') !== '1') return;
-  localStorage.removeItem('autocard_resume_publish');
+  const kind = localStorage.getItem('autocard_resume') || (localStorage.getItem('autocard_resume_publish') === '1' ? 'publish' : '');
+  localStorage.removeItem('autocard_resume'); localStorage.removeItem('autocard_resume_publish');
+  if (!kind) return;
   try {
     const { auth } = fb();
     const res = await auth.getRedirectResult();
     const user = res.user || auth.currentUser;
-    if (!user || S.status !== 'draft') return;
+    if (!user) return;
+    if (kind === 'mine') return openMine();
+    if (kind === 'edit' && S.editing) return saveEdit();
+    if (S.status !== 'draft') return;
     toast(t('resume'));
     await doPublish(user, m => toast(m));
     render();

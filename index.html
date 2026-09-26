@@ -128,6 +128,7 @@
   .toast.on { opacity: 1; }
   .cnt { font-size: 11.5px; color: var(--muted); text-align: right; margin-top: 4px; font-variant-numeric: tabular-nums; }
   .cnt.over { color: var(--err); font-weight: 800; }
+  .lite { font-size: 12.5px; line-height: 1.5; background: #F4F0FA; color: #4B3F72; border-radius: 10px; padding: 9px 12px; margin-top: 6px; }
   .mine { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .mine small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
   .mine .btn { padding: 10px 14px; font-size: 13.5px; text-decoration: none; }
@@ -221,21 +222,25 @@ const COPY_FIELDS = [   // [키, 이름표 번역키, 설명 번역키, 칸 높�
   ['help', 'f_help', 'f_help_sub', 96],
   ['referral', 'f_ref', 'f_ref_sub', 84],
 ];
-// 글자 수 제한 — 폰 한 화면에서 읽히는 길이 + AI 초안 기준(한 줄 소개 35자, 하는 일·돕는 분 150자)과 맞춤.
+// 글자 수 제한 — 명함은 가볍게(핵심만). 길게 쓰고 싶은 사람은 커스텀 비즈홈(작은 퍼스널 브랜딩 홈페이지)으로 안내.
+// 질문 답변(ans)은 명함에 나오지 않고 AI 초안 재료로만 쓰여서 넉넉하게. AI 초안 길이(Worker)도 같은 기준.
 // 한글·한자·가나는 1자, 영문·숫자는 2개를 1자로 셈(같은 칸에서 차지하는 폭이 비슷하도록)
-const LIMITS = { name: 20, title: 25, company: 25, chapter: 15, slogan: 35, work: 150, help: 150, referral: 100, spec: 18, ans: 400 };
+const LIMITS = { name: 20, title: 25, company: 25, chapter: 15, slogan: 35, work: 80, help: 80, referral: 60, spec: 18, specN: 5, ans: 400 };
 const WIDE = /[\u1100-\u11FF\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFF00-\uFFEF\u0E00-\u0E7F]/;
 const wlen = v => { let n = 0; for (const ch of String(v || '')) n += WIDE.test(ch) ? 2 : 1; return Math.ceil(n / 2); };
-const overLim = (key, v) => key === 'spec' ? splitLines(v).some(x => wlen(x) > LIMITS.spec) : wlen(v) > LIMITS[key];
+const overLim = (key, v) => key === 'spec' ? (splitLines(v).length > LIMITS.specN || splitLines(v).some(x => wlen(x) > LIMITS.spec)) : wlen(v) > LIMITS[key];
 // data-lim 칸 밑에 "n / 최대" 표시, 넘치면 빨간색
 function attachCounters() {
   document.querySelectorAll('[data-lim]').forEach(el => {
     const key = el.dataset.lim, c = document.createElement('div'); c.className = 'cnt';
     (el.nextElementSibling && el.nextElementSibling.classList.contains('autohint') ? el.nextElementSibling : el).after(c);
     const upd = () => {
-      if (key === 'spec') { const ls = splitLines(el.value); c.textContent = `${ls.length ? Math.max(...ls.map(wlen)) : 0} / ${LIMITS.spec}`; }
+      if (key === 'spec') { const ls = splitLines(el.value); c.textContent = `${ls.length} / ${LIMITS.specN} · ${ls.length ? Math.max(...ls.map(wlen)) : 0} / ${LIMITS.spec}`; }
       else c.textContent = `${wlen(el.value)} / ${LIMITS[key]}`;
-      c.classList.toggle('over', overLim(key, el.value)); c.title = t('len_note');
+      const over = overLim(key, el.value);
+      c.classList.toggle('over', over); c.title = t('len_note');
+      // 명함에 나오는 문구가 넘치면 "명함은 가볍게 → 비즈홈" 안내(질문 답변은 AI 재료라 제외)
+      if (key !== 'ans') { let h = c.nextElementSibling; if (!(h && h.classList.contains('lite'))) { h = document.createElement('div'); h.className = 'lite'; h.textContent = t('lite_hint'); c.after(h); } h.hidden = !over; }
     };
     el.addEventListener('input', upd); el._cnt = upd; upd();
     if (!el.maxLength || el.maxLength < 0) el.maxLength = key === 'spec' ? 600 : LIMITS[key] * 2 + 20;   // 붙여넣기 폭주 방지(영문 기준 최대치 + 여유)
@@ -608,6 +613,7 @@ const CHECK = {
   4() {
     if (!(copyOf(W()).slogan || '').trim()) return fail(t('e_slogan'));
     const c = copyOf(W());
+    if ((c.specialties || []).length > LIMITS.specN) return fail(t('e_spec_count', { n: LIMITS.specN }));
     if (overLim('spec', (c.specialties || []).join('\n'))) return fail(t('e_spec_len', { n: LIMITS.spec }));
     return lenOk([['ans', S.answers.work, 'q1'], ['ans', S.answers.customer, 'q2'], ['ans', S.answers.referral, 'q3'], ...COPY_FIELDS.map(([k, label]) => [k, c[k], label])]);
   },

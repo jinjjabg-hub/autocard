@@ -126,6 +126,8 @@
   .callout { background: #EEF3FA; border-left: 4px solid var(--brand); padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.6; margin: 6px 0 4px; }
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 13px; z-index: 60; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
   .toast.on { opacity: 1; }
+  .cnt { font-size: 11.5px; color: var(--muted); text-align: right; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .cnt.over { color: var(--err); font-weight: 800; }
   .mine { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .mine small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
   .mine .btn { padding: 10px 14px; font-size: 13.5px; text-decoration: none; }
@@ -219,6 +221,26 @@ const COPY_FIELDS = [   // [키, 이름표 번역키, 설명 번역키, 칸 높�
   ['help', 'f_help', 'f_help_sub', 96],
   ['referral', 'f_ref', 'f_ref_sub', 84],
 ];
+// 글자 수 제한 — 폰 한 화면에서 읽히는 길이 + AI 초안 기준(한 줄 소개 35자, 하는 일·돕는 분 150자)과 맞춤.
+// 한글·한자·가나는 1자, 영문·숫자는 2개를 1자로 셈(같은 칸에서 차지하는 폭이 비슷하도록)
+const LIMITS = { name: 20, title: 25, company: 25, chapter: 15, slogan: 35, work: 150, help: 150, referral: 100, spec: 18, ans: 400 };
+const WIDE = /[\u1100-\u11FF\u2E80-\u9FFF\uAC00-\uD7AF\uF900-\uFAFF\uFF00-\uFFEF\u0E00-\u0E7F]/;
+const wlen = v => { let n = 0; for (const ch of String(v || '')) n += WIDE.test(ch) ? 2 : 1; return Math.ceil(n / 2); };
+const overLim = (key, v) => key === 'spec' ? splitLines(v).some(x => wlen(x) > LIMITS.spec) : wlen(v) > LIMITS[key];
+// data-lim 칸 밑에 "n / 최대" 표시, 넘치면 빨간색
+function attachCounters() {
+  document.querySelectorAll('[data-lim]').forEach(el => {
+    const key = el.dataset.lim, c = document.createElement('div'); c.className = 'cnt';
+    (el.nextElementSibling && el.nextElementSibling.classList.contains('autohint') ? el.nextElementSibling : el).after(c);
+    const upd = () => {
+      if (key === 'spec') { const ls = splitLines(el.value); c.textContent = `${ls.length ? Math.max(...ls.map(wlen)) : 0} / ${LIMITS.spec}`; }
+      else c.textContent = `${wlen(el.value)} / ${LIMITS[key]}`;
+      c.classList.toggle('over', overLim(key, el.value)); c.title = t('len_note');
+    };
+    el.addEventListener('input', upd); el._cnt = upd; upd();
+    if (!el.maxLength || el.maxLength < 0) el.maxLength = key === 'spec' ? 600 : LIMITS[key] * 2 + 20;   // 붙여넣기 폭주 방지(영문 기준 최대치 + 여유)
+  });
+}
 function copyOf(l) { S.copy[l] = Object.assign({ slogan: '', work: '', help: '', referral: '', specialties: [] }, S.copy[l]); return S.copy[l]; }
 // 이미지에서 자동으로 채운 칸 표시 — 사용자가 고치면 표시가 사라짐
 const autoCls = k => S.auto && S.auto[k] ? ' auto' : '';
@@ -256,6 +278,7 @@ function render() {
   document.querySelector('nav.bottom').style.display = S.step === 0 ? 'none' : '';
   $('screen').innerHTML = (S.editing && S.step >= 2 ? editBanner() : '') + VIEWS[S.step]();
   (AFTER[S.step] || (() => {}))();
+  attachCounters();
   if ($('editCancel')) $('editCancel').onclick = () => { if (confirm(t('edit_cancel_confirm'))) exitEdit(); };
   window.scrollTo(0, 0);
 }
@@ -300,9 +323,9 @@ const VIEWS = {
     return `<h2>${t('name_h')}</h2>
       <p class="lead">${t('name_p', { lang: AC_LANGS[W()] })}</p>
       ${[W(), ...S.langs.filter(l => l !== W())].map(l => { const me = l === W(), k = me ? 'name' : ''; return `<label class="f">${t('name_l')} <small>· ${AC_LANGS[l]}${me ? (S.langs.includes(l) ? '' : ' · ' + t('src_tag')) : ' · ' + t('optional')}</small></label>
-        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${me ? (NAME_PH[l] || NAME_PH.en) : t('name_auto_ph', { ex: NAME_PH[l] || NAME_PH.en })}" autocomplete="${me ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
+        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" ${me ? 'data-lim="name"' : ''} value="${esc(S.name[l] || '')}" placeholder="${me ? (NAME_PH[l] || NAME_PH.en) : t('name_auto_ph', { ex: NAME_PH[l] || NAME_PH.en })}" autocomplete="${me ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
       <label class="f">${t('title_l')} <small>· ${t('title_ex')}</small></label>
-      <input class="t${autoCls('title')}" data-auto="title" id="title" value="${esc(S.title[W()] || '')}" placeholder="${t('title_ph')}" autocomplete="organization-title">${autoHint('title')}
+      <input class="t${autoCls('title')}" data-auto="title" id="title" data-lim="title" value="${esc(S.title[W()] || '')}" placeholder="${t('title_ph')}" autocomplete="organization-title">${autoHint('title')}
       ${S.langs.some(l => l !== W()) ? `<p class="hint">${t('title_tr')}</p>` : ''}
       <div class="err" id="err"></div>`;
   },
@@ -310,7 +333,7 @@ const VIEWS = {
     return `<h2>${t('contact_h')}</h2>
       <p class="lead">${t('contact_p')}</p>
       <label class="f">${t('company_l')} <small>· ${t('optional')}</small></label>
-      <input class="t${autoCls('company')}" data-auto="company" id="company" value="${esc(S.company[W()] || '')}" placeholder="${t('company_ph')}" autocomplete="organization">${autoHint('company')}
+      <input class="t${autoCls('company')}" data-auto="company" id="company" data-lim="company" value="${esc(S.company[W()] || '')}" placeholder="${t('company_ph')}" autocomplete="organization">${autoHint('company')}
       <label class="f">${t('mobile_l')}</label>
       <input class="t${autoCls('phone')}" data-auto="phone" id="phone" type="tel" inputmode="tel" value="${esc(S.phone)}" placeholder="010-0000-0000" autocomplete="tel">${autoHint('phone')}
       <label class="f">${t('office_l')} <small>· ${t('office_sub')}</small></label>
@@ -319,7 +342,7 @@ const VIEWS = {
       <input class="t${autoCls('email')}" data-auto="email" id="email" type="email" inputmode="email" value="${esc(S.email)}" placeholder="name@example.com" autocomplete="email">${autoHint('email')}
       <p class="hint">${t('need_one')}</p>
       <label class="f">${t('chapter_l')} <small>· ${t('optional')}</small></label>
-      <input class="t${autoCls('chapter')}" data-auto="chapter" id="chapter" value="${esc(S.chapter || '')}" placeholder="${t('chapter_ph')}">${autoHint('chapter')}
+      <input class="t${autoCls('chapter')}" data-auto="chapter" id="chapter" data-lim="chapter" value="${esc(S.chapter || '')}" placeholder="${t('chapter_ph')}">${autoHint('chapter')}
       <label class="consent" style="margin-top:8px"><input type="checkbox" id="showChapter" ${S.showChapter !== false ? 'checked' : ''}> <span>${t('chapter_badge', { badge: esc((AC_UI[UI] || AC_UI.en).chapter.replace('{c}', S.chapter || '○○')) })}</span></label>
       <label class="f">${t('links_l')} <small>· ${t('links_sub', { n: AC_MAX_LINKS })}</small></label>
       <div id="links">${S.links.map((l, i) => `<div class="row" style="margin-bottom:8px">
@@ -335,19 +358,19 @@ const VIEWS = {
       <p class="lead">${t('work_p')}</p>
       ${S.mode === 'import' && !S.answers.referral.trim() ? `<div class="callout">${t('import_callout')}</div>` : ''}
       <label class="f">${t('q1')}</label>
-      <textarea class="t${autoCls('q1')}" data-auto="q1" data-ans="work" placeholder="${t('q1_ph')}">${esc(S.answers.work)}</textarea>${autoHint('q1')}
+      <textarea class="t${autoCls('q1')}" data-auto="q1" data-ans="work" data-lim="ans" placeholder="${t('q1_ph')}">${esc(S.answers.work)}</textarea>${autoHint('q1')}
       <label class="f">${t('q2')}</label>
-      <textarea class="t${autoCls('q2')}" data-auto="q2" data-ans="customer" placeholder="${t('q2_ph')}">${esc(S.answers.customer)}</textarea>${autoHint('q2')}
+      <textarea class="t${autoCls('q2')}" data-auto="q2" data-ans="customer" data-lim="ans" placeholder="${t('q2_ph')}">${esc(S.answers.customer)}</textarea>${autoHint('q2')}
       <label class="f">${t('q3')}</label>
-      <textarea class="t${autoCls('q3')}" data-auto="q3" data-ans="referral" id="q3" placeholder="${t('q3_ph')}">${esc(S.answers.referral)}</textarea>${autoHint('q3')}
+      <textarea class="t${autoCls('q3')}" data-auto="q3" data-ans="referral" id="q3" data-lim="ans" placeholder="${t('q3_ph')}">${esc(S.answers.referral)}</textarea>${autoHint('q3')}
       <button type="button" class="btn ai" id="aiBtn">${t('ai_btn')}</button>
       <div class="err" id="aiErr"></div>
       <div class="card" style="margin-top:18px"><b style="font-size:14px">${t('copy_h')}</b>
         <p class="hint" style="margin-top:4px">${t('copy_p')}</p>
         ${COPY_FIELDS.map(([k, label, sub, h]) => `<label class="f">${t(label)} <small>· ${t(sub)}</small></label>
-        <textarea class="t${autoCls(k)}" data-auto="${k}" data-copy="${k}" style="min-height:${h}px" placeholder="${t('copy_ph')}">${esc(c[k])}</textarea>${autoHint(k)}`
+        <textarea class="t${autoCls(k)}" data-auto="${k}" data-copy="${k}" data-lim="${k}" style="min-height:${h}px" placeholder="${t('copy_ph')}">${esc(c[k])}</textarea>${autoHint(k)}`
         + (k === 'work' ? `<label class="f">${t('specs_l')} <small>· ${t('specs_sub')}</small></label>
-        <textarea class="t${autoCls('specialties')}" data-auto="specialties" id="specs" style="min-height:96px" placeholder="${t('specs_ph')}">${esc((c.specialties || []).join('\n'))}</textarea>${autoHint('specialties')}` : '')).join('')}
+        <textarea class="t${autoCls('specialties')}" data-auto="specialties" id="specs" data-lim="spec" style="min-height:96px" placeholder="${t('specs_ph')}">${esc((c.specialties || []).join('\n'))}</textarea>${autoHint('specialties')}` : '')).join('')}
       </div>
       <div class="err" id="err"></div>`;
   },
@@ -564,23 +587,29 @@ function fmtPhone(v) {
 // ===================================================================
 // 단계 이동 + 검사
 // ===================================================================
+function lenOk(list) {
+  const bad = list.find(([k, v]) => overLim(k, v));
+  return bad ? fail(t('e_len', { f: t(bad[2]).replace(/^Q\d\.\s*/, m => m), n: LIMITS[bad[0]] })) : true;
+}
 function fail(msg) { const e = $('err'); if (e) e.textContent = msg; else toast(msg); return false; }
 const CHECK = {
   2() {
     // 기본 언어 이름만 필수 — 다른 언어 이름은 번역 단계에서 AI가 표기를 넣고, 틀리면 본인이 고침
     if (!(S.name[W()] || '').trim()) return fail(t('e_name', { lang: AC_LANGS[W()] }));
-    return true;
+    return lenOk([['name', S.name[W()], 'name_l'], ['title', S.title[W()], 'title_l']]);
   },
   3() {
     if (!S.phone.trim() && !S.email.trim()) return fail(t('e_contact'));
     if (S.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.email)) return fail(t('e_email'));
     S.links = S.links.filter(l => l.url || l.label);
     if (S.links.some(l => !l.url)) return fail(t('e_link'));
-    return true;
+    return lenOk([['company', S.company[W()], 'company_l'], ['chapter', S.chapter, 'chapter_l']]);
   },
   4() {
     if (!(copyOf(W()).slogan || '').trim()) return fail(t('e_slogan'));
-    return true;
+    const c = copyOf(W());
+    if (overLim('spec', (c.specialties || []).join('\n'))) return fail(t('e_spec_len', { n: LIMITS.spec }));
+    return lenOk([['ans', S.answers.work, 'q1'], ['ans', S.answers.customer, 'q2'], ['ans', S.answers.referral, 'q3'], ...COPY_FIELDS.map(([k, label]) => [k, c[k], label])]);
   },
 };
 $('nextBtn').onclick = () => {
@@ -632,7 +661,7 @@ async function aiDraft() {
     const r = await callWorker('/autocard/draft', { lang: W(), answers: a, name: S.name[W()] || '', title: S.title[W()] || '', company: S.company[W()] || '' });
     const c = copyOf(W()); COPY_FIELDS.forEach(([k]) => { if (r[k] && !(S.auto && S.auto[k])) c[k] = r[k]; });   // 이미지 명함 원문(예: 슬로건)은 그대로 둠
     save();
-    if (S.step === 4) document.querySelectorAll('[data-copy]').forEach(t => { t.value = c[t.dataset.copy]; });
+    if (S.step === 4) document.querySelectorAll('[data-copy]').forEach(t => { t.value = c[t.dataset.copy]; if (t._cnt) t._cnt(); });   // 글자 수 표시도 갱신
     toast(t('ai_done'));
   } catch (e) {
     if ($('aiErr')) $('aiErr').textContent = t('ai_fail', { m: e.message });

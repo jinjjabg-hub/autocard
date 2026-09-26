@@ -80,8 +80,8 @@ function acAccentOn(point, bg) { return acContrast(point, bg) >= 4.5 ? point : a
 // 직접 선택 시 대비 경고 (시안 기준: point↔sub 2 미만, main↔sub 1.5 미만)
 function acColorWarnings(d) {
   const w = [];
-  if (acContrast(d.point, d.sub) < 2) w.push('강조색과 바탕색이 비슷해 버튼이 잘 안 보일 수 있어요');
-  if (acContrast(d.main, d.sub) < 1.5) w.push('메인색과 바탕색이 비슷해 경계가 흐려 보여요');
+  if (acContrast(d.point, d.sub) < 2) w.push('point');   // 강조색·바탕색이 비슷함(버튼이 잘 안 보임) — 문구는 제작 앱의 i18n(warn_point)
+  if (acContrast(d.main, d.sub) < 1.5) w.push('main');    // 메인색·바탕색이 비슷함(경계가 흐림) — warn_main
   return w;
 }
 

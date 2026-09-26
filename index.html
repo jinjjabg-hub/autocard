@@ -126,12 +126,13 @@
   .callout { background: #EEF3FA; border-left: 4px solid var(--brand); padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.6; margin: 6px 0 4px; }
   .toast { position: fixed; left: 50%; bottom: 100px; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 13px; z-index: 60; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: calc(100% - 32px); }
   .toast.on { opacity: 1; }
+  .uisel { border: 1.5px solid var(--line); background: var(--paper); border-radius: 999px; padding: 5px 8px; font-size: 12.5px; font-weight: 700; color: var(--ink); cursor: pointer; }
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <div class="toprow"><div class="brand">자동 명함</div><div class="price" id="price">5,900원</div></div>
+    <div class="toprow"><div class="brand" id="brand">자동 명함</div><div class="row"><select id="uiLang" class="uisel" aria-label="Language"></select><div class="price" id="price">5,900원</div></div></div>
     <div class="bar"><i id="bar"></i></div>
     <div class="stepname" id="stepname"></div>
   </header>
@@ -151,19 +152,19 @@
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-storage-compat.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/card.js"></script>
+<script src="assets/i18n.js"></script>
 <script>
 // ===================================================================
 // 상태 — 입력하는 족족 localStorage에 저장 (중간에 나가도 이어서 작성)
 // ===================================================================
 const STORE_KEY = 'autocard_draft_v1';
-const STEPS = ['언어 선택', '이름·직함', '기본 정보', '하는 일', '사진', '디자인·색상', '미리보기·발행'];
 const NAME_PH = { ko: '홍길동', en: 'Gildong Hong', ja: '山田 太郎', zh: '洪吉童', vi: 'Hong Gil Dong', mn: 'Хон Гилдон' };
 
 function blankState() {
   return {
     step: 0, cardId: null, status: 'draft', createdAt: 0, ref: '',
     mode: '', auto: {},   // mode: 'import'(이미지 명함으로 시작) | 'manual'. auto: 이미지에서 자동으로 채운 칸(확인 전)
-    langs: ['ko'],
+    langs: [UI],   // 처음 기본 언어 = 화면 언어(외국인은 자기 언어로 바로 시작)
     name: {}, title: {}, company: {}, nameAuto: {},   // nameAuto: 번역 때 자동으로 넣은 다른 언어 이름(본인이 고치면 덮어쓰지 않음)
     phone: '', phone2: '', email: '', links: [], chapter: '', showChapter: true,
     answers: { work: '', customer: '', referral: '' },
@@ -187,7 +188,7 @@ function save() {
   catch (e) {
     // 사진 때문에 용량이 넘치면 사진만 빼고라도 저장
     try { localStorage.setItem(STORE_KEY, JSON.stringify({ ...S, images: { ...S.images, profile: '', second: '' } })); } catch (e2) {}
-    if (!saveWarned) { saveWarned = true; toast('사진은 이 기기에 임시저장되지 않아요. 창을 닫으면 다시 올려주세요.'); }
+    if (!saveWarned) { saveWarned = true; toast(t('save_warn')); }
   }
 }
 const base = () => S.langs[0];
@@ -195,16 +196,16 @@ const $ = id => document.getElementById(id);
 const esc = acEsc;
 function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), 2600); }
 // 명함 본문 문구 4개 — 순서가 곧 명함에 나오는 순서
-const COPY_FIELDS = [
-  ['slogan', '한 줄 소개', '명함 맨 위에 들어가요', 64],
-  ['work', '하는 일', '무슨 일을 어떻게 하는지', 96],
-  ['help', '이런 분을 돕습니다', '어떤 상황의 누구에게 도움이 되는지', 96],
-  ['referral', '이런 분을 소개해주세요', '리퍼럴 문구', 84],
+const COPY_FIELDS = [   // [키, 이름표 번역키, 설명 번역키, 칸 높이]
+  ['slogan', 'f_slogan', 'f_slogan_sub', 64],
+  ['work', 'f_work', 'f_work_sub', 96],
+  ['help', 'f_help', 'f_help_sub', 96],
+  ['referral', 'f_ref', 'f_ref_sub', 84],
 ];
 function copyOf(l) { S.copy[l] = Object.assign({ slogan: '', work: '', help: '', referral: '', specialties: [] }, S.copy[l]); return S.copy[l]; }
 // 이미지에서 자동으로 채운 칸 표시 — 사용자가 고치면 표시가 사라짐
 const autoCls = k => S.auto && S.auto[k] ? ' auto' : '';
-const autoHint = k => S.auto && S.auto[k] ? `<div class="autohint" data-hint="${k}">이미지에서 가져왔어요, 확인해주세요</div>` : '';
+const autoHint = k => S.auto && S.auto[k] ? `<div class="autohint" data-hint="${k}">${t('auto_hint')}</div>` : '';
 function unauto(k) { if (S.auto && S.auto[k]) { delete S.auto[k]; document.querySelectorAll(`[data-auto="${k}"]`).forEach(x => x.classList.remove('auto')); document.querySelectorAll(`[data-hint="${k}"]`).forEach(x => x.remove()); } }
 function onlyLangs(o) { const r = {}; S.langs.forEach(l => { if (o[l] !== undefined) r[l] = o[l]; }); return r; }   // 뺀 언어의 값은 저장하지 않음
 function cardData() {   // 렌더러·Firestore에 넘기는 명함 데이터 (스펙의 autocards 구조)
@@ -227,9 +228,11 @@ if (/KAKAOTALK/i.test(UA) && /Android/i.test(UA)) location.href = 'intent://' + 
 // 화면
 // ===================================================================
 function render() {
+  document.title = t('doc_title'); $('brand').textContent = t('brand');
+  $('prevBtn').textContent = t('prev'); $('nextBtn').textContent = t('next');
   $('price').textContent = acWon(acPrice(S.langs));
   $('bar').style.width = (S.step / 7 * 100) + '%';
-  $('stepname').textContent = S.step ? `${S.step} / 7 · ${STEPS[S.step - 1]}` : '시작하기';
+  $('stepname').textContent = S.step ? `${S.step} / 7 · ${t('step' + S.step)}` : t('start');
   $('prevBtn').style.visibility = S.step >= 1 && S.status === 'draft' ? 'visible' : 'hidden';
   $('nextBtn').style.display = S.step >= 1 && S.step < 7 ? '' : 'none';
   document.querySelector('nav.bottom').style.display = S.step === 0 ? 'none' : '';
@@ -240,153 +243,154 @@ function render() {
 
 const VIEWS = {
   0() {
-    if (IMP.stage === 'reading') return `<h2>명함을 읽고 있어요</h2>
-      <div class="reading"><img src="${IMP.img}" alt=""><p><span class="spinner"></span>이름·연락처·전문분야를 찾는 중… (10초 정도)</p></div>`;
-    if (IMP.stage === 'photo') return `<h2>이 사진을 쓸까요?</h2>
-      <p class="lead">명함 이미지에서 인물 사진을 잘라냈어요. 사진을 끌어서 위치를 맞추거나 크기를 조절할 수 있어요.</p>
+    if (IMP.stage === 'reading') return `<h2>${t('reading_h')}</h2>
+      <div class="reading"><img src="${IMP.img}" alt=""><p><span class="spinner"></span>${t('reading_p')}</p></div>`;
+    if (IMP.stage === 'photo') return `<h2>${t('photo_h')}</h2>
+      <p class="lead">${t('photo_p')}</p>
       <div class="cropwrap"><canvas id="cropCanvas" width="480" height="600"></canvas></div>
-      <label class="slider">크기 <input type="range" id="cropZoom" min="20" max="100" step="1"></label>
-      <button type="button" class="btn brand wide" id="useCrop" style="margin-top:18px">이 사진 쓸게요</button>
-      <button type="button" class="btn ghost wide" id="otherPhoto" style="margin-top:10px">다른 사진 올릴게요</button>
-      <button type="button" class="btn ghost wide" id="noPhoto" style="margin-top:10px;border:0;color:var(--muted)">사진 없이 계속</button>`;
-    return `${IN_APP ? `<div class="inapp">카카오톡·인스타 안에서 열렸어요. 발행할 때 Google 로그인이 필요해서, 오른쪽 위 메뉴 → <b>다른 브라우저(Safari·Chrome)로 열기</b> 후 시작하는 걸 추천해요.</div>` : ''}
-      <h2>어떻게 시작할까요?</h2>
-      <p class="lead">5,900원으로 만드는 디지털 명함. 받은 사람은 카드북에 바로 저장할 수 있어요.</p>
-      ${IMP.stage === 'error' ? `<div class="err">${esc(IMP.error)}</div>${IMP.limited ? '<button type="button" class="btn ghost" id="adminLogin" style="margin-top:8px">관리자라면 Google 로그인 후 다시 시도</button>' : ''}` : ''}
-      <button type="button" class="startcard rec" id="startImport"><b>기존 명함 이미지로 시작 <em>추천 · 1분</em></b>
-        <span>갖고 계신 명함·홍보 이미지 한 장만 올리면 이름·연락처·전문분야·사진이 자동으로 채워져요. 카톡에 저장된 이미지도 돼요.</span></button>
-      <button type="button" class="startcard" id="startManual"><b>처음부터 입력</b><span>질문에 답하면서 하나씩 채워요. 5분 정도 걸려요.</span></button>`;
+      <label class="slider">${t('size')} <input type="range" id="cropZoom" min="20" max="100" step="1"></label>
+      <button type="button" class="btn brand wide" id="useCrop" style="margin-top:18px">${t('use_crop')}</button>
+      <button type="button" class="btn ghost wide" id="otherPhoto" style="margin-top:10px">${t('other_photo')}</button>
+      <button type="button" class="btn ghost wide" id="noPhoto" style="margin-top:10px;border:0;color:var(--muted)">${t('no_photo')}</button>`;
+    return `${IN_APP ? `<div class="inapp">${t('inapp')}</div>` : ''}
+      <h2>${t('start_h')}</h2>
+      <p class="lead">${t('start_p', { price: acWon(AC_BASE_PRICE) })}</p>
+      ${IMP.stage === 'error' ? `<div class="err">${esc(IMP.error)}</div>${IMP.limited ? `<button type="button" class="btn ghost" id="adminLogin" style="margin-top:8px">${t('admin_retry')}</button>` : ''}` : ''}
+      <button type="button" class="startcard rec" id="startImport"><b>${t('imp_title')} <em>${t('imp_badge')}</em></b>
+        <span>${t('imp_desc')}</span></button>
+      <button type="button" class="startcard" id="startManual"><b>${t('man_title')}</b><span>${t('man_desc')}</span></button>`;
   },
   1() {
     const extras = S.langs.slice(1);
-    return `${IN_APP ? `<div class="inapp">카카오톡·인스타 안에서 열렸어요. 발행할 때 Google 로그인이 필요해서, 오른쪽 위 메뉴 → <b>다른 브라우저(Safari·Chrome)로 열기</b> 후 시작하는 걸 추천해요.</div>` : ''}
-      <h2>명함에 넣을 언어를 골라주세요</h2>
-      <p class="lead">받는 사람이 명함 위에서 언어를 바꿔 볼 수 있어요. 이름은 직접, 나머지 문구는 AI가 번역해요.</p>
-      <label class="f">기본 언어</label>
+    return `${IN_APP ? `<div class="inapp">${t('inapp')}</div>` : ''}
+      <h2>${t('lang_h')}</h2>
+      <p class="lead">${t('lang_p')}</p>
+      <label class="f">${t('base_lang')} <small>· ${t('base_lang_sub')}</small></label>
       <div class="chips">${Object.entries(AC_LANGS).map(([k, n]) => `<button type="button" class="chip ${k === base() ? 'on' : ''}" data-base="${k}">${n}</button>`).join('')}</div>
-      <label class="f">추가 언어 <small>· 1개당 +5,000원, 최대 ${AC_MAX_LANGS - 1}개</small></label>
+      <label class="f">${t('extra_lang')} <small>· ${t('extra_lang_sub', { add: acWon(AC_EXTRA_LANG_PRICE), n: AC_MAX_LANGS - 1 })}</small></label>
       <div class="chips">${Object.entries(AC_LANGS).filter(([k]) => k !== base()).map(([k, n]) => {
         const on = extras.includes(k);
         return `<button type="button" class="chip ${on ? 'on' : ''}" data-extra="${k}" ${!on && S.langs.length >= AC_MAX_LANGS ? 'disabled' : ''}>${n}</button>`;
       }).join('')}</div>
       <div class="card pricebox"><span>${S.langs.map(l => AC_LANGS[l]).join(' · ')}</span><b>${acWon(acPrice(S.langs))}</b></div>
-      <p class="hint">기본 5,900원 + 추가 언어 ${extras.length}개 × 5,000원</p>`;
+      <p class="hint">${t('price_hint', { base: acWon(AC_BASE_PRICE), n: extras.length, add: acWon(AC_EXTRA_LANG_PRICE) })}</p>`;
   },
   2() {
-    return `<h2>이름과 직함을 알려주세요</h2>
-      <p class="lead">이름은 번역하지 않아요. 언어마다 보여주고 싶은 표기 그대로 적어주세요.</p>
-      ${S.langs.map(l => { const k = l === base() ? 'name' : ''; return `<label class="f">이름 <small>· ${AC_LANGS[l]}${l === base() ? '' : ' · 선택'}</small></label>
-        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${l === base() ? NAME_PH[l] : '비워두면 자동으로 넣어요 (예: ' + NAME_PH[l] + ')'}" autocomplete="${l === base() ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
-      <label class="f">직함 <small>· 예: 상가 전문 중개사, 대표</small></label>
-      <input class="t${autoCls('title')}" data-auto="title" id="title" value="${esc(S.title[base()] || '')}" placeholder="무슨 일을 하는 사람인지 한눈에" autocomplete="organization-title">${autoHint('title')}
-      ${S.langs.length > 1 ? '<p class="hint">직함은 마지막 단계에서 선택한 언어로 자동 번역돼요.</p>' : ''}
+    return `<h2>${t('name_h')}</h2>
+      <p class="lead">${t('name_p')}</p>
+      ${S.langs.map(l => { const k = l === base() ? 'name' : ''; return `<label class="f">${t('name_l')} <small>· ${AC_LANGS[l]}${l === base() ? '' : ' · ' + t('optional')}</small></label>
+        <input class="t${k ? autoCls(k) : ''}" data-auto="${k}" data-name="${l}" value="${esc(S.name[l] || '')}" placeholder="${l === base() ? NAME_PH[l] : t('name_auto_ph', { ex: NAME_PH[l] })}" autocomplete="${l === base() ? 'name' : 'off'}">${k ? autoHint(k) : ''}`; }).join('')}
+      <label class="f">${t('title_l')} <small>· ${t('title_ex')}</small></label>
+      <input class="t${autoCls('title')}" data-auto="title" id="title" value="${esc(S.title[base()] || '')}" placeholder="${t('title_ph')}" autocomplete="organization-title">${autoHint('title')}
+      ${S.langs.length > 1 ? `<p class="hint">${t('title_tr')}</p>` : ''}
       <div class="err" id="err"></div>`;
   },
   3() {
-    return `<h2>연락처를 넣어주세요</h2>
-      <p class="lead">받은 사람이 버튼 한 번으로 전화·문자·메일을 보낼 수 있어요.</p>
-      <label class="f">회사명 <small>· 선택</small></label>
-      <input class="t${autoCls('company')}" data-auto="company" id="company" value="${esc(S.company[base()] || '')}" placeholder="회사·상호" autocomplete="organization">${autoHint('company')}
-      <label class="f">휴대폰</label>
+    return `<h2>${t('contact_h')}</h2>
+      <p class="lead">${t('contact_p')}</p>
+      <label class="f">${t('company_l')} <small>· ${t('optional')}</small></label>
+      <input class="t${autoCls('company')}" data-auto="company" id="company" value="${esc(S.company[base()] || '')}" placeholder="${t('company_ph')}" autocomplete="organization">${autoHint('company')}
+      <label class="f">${t('mobile_l')}</label>
       <input class="t${autoCls('phone')}" data-auto="phone" id="phone" type="tel" inputmode="tel" value="${esc(S.phone)}" placeholder="010-0000-0000" autocomplete="tel">${autoHint('phone')}
-      <label class="f">사무실 전화 <small>· 선택, 연락처 저장에만 들어가요</small></label>
+      <label class="f">${t('office_l')} <small>· ${t('office_sub')}</small></label>
       <input class="t${autoCls('phone2')}" data-auto="phone2" id="phone2" type="tel" inputmode="tel" value="${esc(S.phone2 || '')}" placeholder="02-000-0000">${autoHint('phone2')}
-      <label class="f">이메일</label>
+      <label class="f">${t('email_l')}</label>
       <input class="t${autoCls('email')}" data-auto="email" id="email" type="email" inputmode="email" value="${esc(S.email)}" placeholder="name@example.com" autocomplete="email">${autoHint('email')}
-      <p class="hint">휴대폰·이메일 중 하나는 꼭 필요해요.</p>
-      <label class="f">BNI 챕터 <small>· 선택</small></label>
-      <input class="t${autoCls('chapter')}" data-auto="chapter" id="chapter" value="${esc(S.chapter || '')}" placeholder="예: 자이언츠">${autoHint('chapter')}
-      <label class="consent" style="margin-top:8px"><input type="checkbox" id="showChapter" ${S.showChapter !== false ? 'checked' : ''}> <span>명함 이름 근처에 "BNI ${esc(S.chapter || '○○')} 챕터" 배지 표시</span></label>
-      <label class="f">링크 <small>· 홈페이지, 블로그, 인스타 등 최대 ${AC_MAX_LINKS}개</small></label>
+      <p class="hint">${t('need_one')}</p>
+      <label class="f">${t('chapter_l')} <small>· ${t('optional')}</small></label>
+      <input class="t${autoCls('chapter')}" data-auto="chapter" id="chapter" value="${esc(S.chapter || '')}" placeholder="${t('chapter_ph')}">${autoHint('chapter')}
+      <label class="consent" style="margin-top:8px"><input type="checkbox" id="showChapter" ${S.showChapter !== false ? 'checked' : ''}> <span>${t('chapter_badge', { badge: esc((AC_UI[UI] || AC_UI.en).chapter.replace('{c}', S.chapter || '○○')) })}</span></label>
+      <label class="f">${t('links_l')} <small>· ${t('links_sub', { n: AC_MAX_LINKS })}</small></label>
       <div id="links">${S.links.map((l, i) => `<div class="row" style="margin-bottom:8px">
-        <input class="t" style="flex:0 0 34%" data-ll="${i}" value="${esc(l.label)}" placeholder="이름">
-        <input class="t${l.auto ? ' auto' : ''}" style="flex:1" data-lu="${i}" value="${esc(l.url)}" placeholder="주소" inputmode="url">
-        <button type="button" class="x" data-ldel="${i}" aria-label="삭제">×</button></div>`).join('')}</div>
-      ${S.links.length < AC_MAX_LINKS ? '<button type="button" class="btn ghost" id="addLink">+ 링크 추가</button>' : ''}
+        <input class="t" style="flex:0 0 34%" data-ll="${i}" value="${esc(l.label)}" placeholder="${t('link_label_ph')}">
+        <input class="t${l.auto ? ' auto' : ''}" style="flex:1" data-lu="${i}" value="${esc(l.url)}" placeholder="${t('link_url_ph')}" inputmode="url">
+        <button type="button" class="x" data-ldel="${i}" aria-label="${t('del')}">×</button></div>`).join('')}</div>
+      ${S.links.length < AC_MAX_LINKS ? `<button type="button" class="btn ghost" id="addLink">${t('add_link')}</button>` : ''}
       <div class="err" id="err"></div>`;
   },
   4() {
     const c = copyOf(base());
-    return `<h2>어떤 일을 하시나요?</h2>
-      <p class="lead">편하게 말하듯 적으면 AI가 명함 문구 4개(한 줄 소개·하는 일·돕는 분·소개받고 싶은 분)로 다듬어요.</p>
-      ${S.mode === 'import' && !S.answers.referral.trim() ? `<div class="callout">Q1·Q2는 이미지 명함 내용으로 미리 채웠어요.<br><b>Q3(소개받고 싶은 분)만 적어주세요</b> — 이미지 명함에는 보통 없는 내용이라, 이게 있어야 리퍼럴이 들어와요.</div>` : ''}
-      <label class="f">Q1. 어떤 일을 하나요?</label>
-      <textarea class="t${autoCls('q1')}" data-auto="q1" data-ans="work" placeholder="예: 강남·서초 상가 매매와 임대를 중개해요. 권리금 협상을 특히 잘해요.">${esc(S.answers.work)}</textarea>${autoHint('q1')}
-      <label class="f">Q2. 주로 누구를 돕나요?</label>
-      <textarea class="t${autoCls('q2')}" data-auto="q2" data-ans="customer" placeholder="예: 처음 가게를 여는 자영업자, 상가 건물주">${esc(S.answers.customer)}</textarea>${autoHint('q2')}
-      <label class="f">Q3. 어떤 분을 소개받고 싶나요?</label>
-      <textarea class="t${autoCls('q3')}" data-auto="q3" data-ans="referral" id="q3" placeholder="예: 가게 이전·확장을 고민하는 사장님, 상가를 팔려는 건물주">${esc(S.answers.referral)}</textarea>${autoHint('q3')}
-      <button type="button" class="btn ai" id="aiBtn">✨ AI 초안 만들기</button>
+    return `<h2>${t('work_h')}</h2>
+      <p class="lead">${t('work_p')}</p>
+      ${S.mode === 'import' && !S.answers.referral.trim() ? `<div class="callout">${t('import_callout')}</div>` : ''}
+      <label class="f">${t('q1')}</label>
+      <textarea class="t${autoCls('q1')}" data-auto="q1" data-ans="work" placeholder="${t('q1_ph')}">${esc(S.answers.work)}</textarea>${autoHint('q1')}
+      <label class="f">${t('q2')}</label>
+      <textarea class="t${autoCls('q2')}" data-auto="q2" data-ans="customer" placeholder="${t('q2_ph')}">${esc(S.answers.customer)}</textarea>${autoHint('q2')}
+      <label class="f">${t('q3')}</label>
+      <textarea class="t${autoCls('q3')}" data-auto="q3" data-ans="referral" id="q3" placeholder="${t('q3_ph')}">${esc(S.answers.referral)}</textarea>${autoHint('q3')}
+      <button type="button" class="btn ai" id="aiBtn">${t('ai_btn')}</button>
       <div class="err" id="aiErr"></div>
-      <div class="card" style="margin-top:18px"><b style="font-size:14px">명함에 들어갈 문구</b>
-        <p class="hint" style="margin-top:4px">AI 초안이 들어오면 마음에 들게 고쳐주세요. 이 순서대로 명함에 나와요.</p>
-        ${COPY_FIELDS.map(([k, label, sub, h]) => `<label class="f">${label} <small>· ${sub}</small></label>
-        <textarea class="t${autoCls(k)}" data-auto="${k}" data-copy="${k}" style="min-height:${h}px" placeholder="AI 초안을 만들거나 직접 적어주세요">${esc(c[k])}</textarea>${autoHint(k)}`
-        + (k === 'work' ? `<label class="f">전문분야 <small>· 한 줄에 하나씩, 선택</small></label>
-        <textarea class="t${autoCls('specialties')}" data-auto="specialties" id="specs" style="min-height:96px" placeholder="예: 상가 매매\n상가 임대\n권리금 협상">${esc((c.specialties || []).join('\n'))}</textarea>${autoHint('specialties')}` : '')).join('')}
+      <div class="card" style="margin-top:18px"><b style="font-size:14px">${t('copy_h')}</b>
+        <p class="hint" style="margin-top:4px">${t('copy_p')}</p>
+        ${COPY_FIELDS.map(([k, label, sub, h]) => `<label class="f">${t(label)} <small>· ${t(sub)}</small></label>
+        <textarea class="t${autoCls(k)}" data-auto="${k}" data-copy="${k}" style="min-height:${h}px" placeholder="${t('copy_ph')}">${esc(c[k])}</textarea>${autoHint(k)}`
+        + (k === 'work' ? `<label class="f">${t('specs_l')} <small>· ${t('specs_sub')}</small></label>
+        <textarea class="t${autoCls('specialties')}" data-auto="specialties" id="specs" style="min-height:96px" placeholder="${t('specs_ph')}">${esc((c.specialties || []).join('\n'))}</textarea>${autoHint('specialties')}` : '')).join('')}
       </div>
       <div class="err" id="err"></div>`;
   },
   5() {
     const im = S.images, logo = im.secondType === 'logo';
-    return `<h2>사진 2장을 올려주세요</h2>
-      <p class="lead">얼굴이 보이는 명함은 기억에 오래 남아요. 없으면 이름 첫 글자로 대신해요.</p>
-      <label class="f">1. 프로필 사진</label>
+    return `<h2>${t('photos_h')}</h2>
+      <p class="lead">${t('photos_p')}</p>
+      <label class="f">${t('p_profile')}</label>
       <div class="up"><div class="upimg round ${im.profile ? 'has' : ''}" style="${im.profile ? `background-image:url('${im.profile}')` : ''}">👤</div>
-        <div><button type="button" class="btn ghost" data-pick="profile">${im.profile ? '바꾸기' : '사진 선택'}</button>
-        ${im.profile ? '<button type="button" class="x" data-rm="profile">삭제</button>' : ''}</div></div>
-      <label class="f">2. 배경 사진 또는 로고</label>
-      <div class="seg"><button type="button" class="${!logo ? 'on' : ''}" data-st="hero">배경 사진</button><button type="button" class="${logo ? 'on' : ''}" data-st="logo">로고</button></div>
+        <div><button type="button" class="btn ghost" data-pick="profile">${im.profile ? t('change') : t('pick_photo')}</button>
+        ${im.profile ? `<button type="button" class="x" data-rm="profile">${t('del')}</button>` : ''}</div></div>
+      <label class="f">${t('p_second')}</label>
+      <div class="seg"><button type="button" class="${!logo ? 'on' : ''}" data-st="hero">${t('bg_photo')}</button><button type="button" class="${logo ? 'on' : ''}" data-st="logo">${t('logo')}</button></div>
       <div class="up"><div class="upimg ${logo ? 'contain' : ''} ${im.second ? 'has' : ''}" style="${im.second ? `background-image:url('${im.second}')` : ''}">${logo ? '🏷️' : '🏞️'}</div>
-        <div><button type="button" class="btn ghost" data-pick="second">${im.second ? '바꾸기' : '이미지 선택'}</button>
-        ${im.second ? '<button type="button" class="x" data-rm="second">삭제</button>' : ''}</div></div>
-      <p class="hint">${logo ? '로고를 고르면 배경은 테마 색으로 채워져요. 투명 배경 PNG가 가장 깔끔해요.' : '가게·작업 현장·제품처럼 하는 일이 보이는 사진이 좋아요.'}</p>`;
+        <div><button type="button" class="btn ghost" data-pick="second">${im.second ? t('change') : t('pick_image')}</button>
+        ${im.second ? `<button type="button" class="x" data-rm="second">${t('del')}</button>` : ''}</div></div>
+      <p class="hint">${logo ? t('logo_hint') : t('bg_hint')}</p>`;
   },
   6() {
     const d = S.design, warns = d.colorMode === 'custom' ? acColorWarnings(d) : [];
-    return `<h2>디자인과 색을 고르세요</h2>
-      <p class="lead">글자색은 배경에 맞춰 자동으로 정해져요.</p>
-      <div class="tpls">${Object.entries(AC_TEMPLATES).map(([k, n]) => `<button type="button" class="tpl ${d.tpl === k ? 'on' : ''}" data-tpl="${k}"><div class="thumb"><div data-thumb="${k}"></div></div><span>${n}</span></button>`).join('')}</div>
-      ${S.images.profile ? `<label class="f" style="margin-top:22px">인물 사진</label>
-      <div class="seg">${[['large', '상단에 크게'], ['small', '작게(동그라미)']].map(([k, n]) => `<button type="button" class="${(d.photo || 'small') === k ? 'on' : ''}" data-ph="${k}">${n}</button>`).join('')}</div>` : ''}
-      <label class="f" style="margin-top:22px">글꼴 <small>· 제목·이름에 쓰여요</small></label>
-      <div class="fonts">${Object.entries(AC_FONTS).map(([k, f]) => `<button type="button" class="fontbtn ${curFont() === k ? 'on' : ''}" data-font="${k}" style="font-family:${FONT_FAMILY[k]}"><b>${esc(S.name[base()] || '홍길동')}</b><small>${f.label} · ${f.sample}</small></button>`).join('')}</div>
-      <label class="f" style="margin-top:22px">색상</label>
-      ${S.auto && S.auto.style ? '<div class="autohint" style="margin-bottom:8px">기존 명함 이미지의 색·분위기로 골라뒀어요. 마음에 안 들면 바꾸세요</div>' : ''}
-      <div class="seg">${[...(S.imgStyle ? [['image', '명함 색']] : []), ['preset', '추천 조합'], ['random', '랜덤'], ['custom', '직접 선택']].map(([k, n]) => `<button type="button" class="${d.colorMode === k ? 'on' : ''}" data-cm="${k}">${n}</button>`).join('')}</div>
-      ${d.colorMode === 'preset' ? `<div class="presets">${AC_PRESETS.map((p, i) => `<button type="button" class="preset ${d.presetIdx === i ? 'on' : ''}" data-preset="${i}"><span class="dots"><i style="background:${p[1]}"></i><i style="background:${p[2]}"></i><i style="background:${p[3]}"></i></span>${p[0]}</button>`).join('')}</div>` : ''}
-      ${d.colorMode === 'random' ? `<button type="button" class="btn wide" id="rollBtn">🎲 다른 조합 뽑기</button><p class="hint" style="text-align:center">지금: ${AC_PRESETS[d.presetIdx][0]}</p>` : ''}
-      ${d.colorMode === 'custom' ? ['main', 'sub', 'point'].map(k => `<div class="swrow"><div class="lab">${{ main: '메인색', sub: '바탕색', point: '강조색' }[k]} <small>· ${{ main: '위쪽 큰 면', sub: '전체 바탕', point: '버튼·포인트' }[k]}</small></div>
-        <div class="sws">${AC_SWATCH[k].map(c => `<button type="button" class="sw ${d[k].toUpperCase() === c ? 'on' : ''}" data-sw="${k}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div></div>`).join('') + warns.map(w => `<div class="warn">⚠️ ${w}</div>`).join('') : ''}
+    return `<h2>${t('design_h')}</h2>
+      <p class="lead">${t('design_p')}</p>
+      <div class="tpls">${Object.entries(AC_TEMPLATES).map(([k, n]) => `<button type="button" class="tpl ${d.tpl === k ? 'on' : ''}" data-tpl="${k}"><div class="thumb"><div data-thumb="${k}"></div></div><span>${t('tpl_' + k)}</span></button>`).join('')}</div>
+      ${S.images.profile ? `<label class="f" style="margin-top:22px">${t('photo_l')}</label>
+      <div class="seg">${[['large', t('ph_large')], ['small', t('ph_small')]].map(([k, n]) => `<button type="button" class="${(d.photo || 'small') === k ? 'on' : ''}" data-ph="${k}">${n}</button>`).join('')}</div>` : ''}
+      <label class="f" style="margin-top:22px">${t('font_l')} <small>· ${t('font_sub')}</small></label>
+      <div class="fonts">${Object.entries(AC_FONTS).map(([k, f]) => `<button type="button" class="fontbtn ${curFont() === k ? 'on' : ''}" data-font="${k}" style="font-family:${FONT_FAMILY[k]}"><b>${esc(S.name[base()] || NAME_PH[base()] || '홍길동')}</b><small>${t('font_' + k).replace('|', ' · ')}</small></button>`).join('')}</div>
+      <label class="f" style="margin-top:22px">${t('color_l')}</label>
+      ${S.auto && S.auto.style ? `<div class="autohint" style="margin-bottom:8px">${t('style_hint')}</div>` : ''}
+      <div class="seg">${[...(S.imgStyle ? [['image', t('cm_image')]] : []), ['preset', t('cm_preset')], ['random', t('cm_random')], ['custom', t('cm_custom')]].map(([k, n]) => `<button type="button" class="${d.colorMode === k ? 'on' : ''}" data-cm="${k}">${n}</button>`).join('')}</div>
+      ${d.colorMode === 'preset' ? `<div class="presets">${AC_PRESETS.map((p, i) => `<button type="button" class="preset ${d.presetIdx === i ? 'on' : ''}" data-preset="${i}"><span class="dots"><i style="background:${p[1]}"></i><i style="background:${p[2]}"></i><i style="background:${p[3]}"></i></span>${t('preset' + i)}</button>`).join('')}</div>` : ''}
+      ${d.colorMode === 'random' ? `<button type="button" class="btn wide" id="rollBtn">${t('roll')}</button><p class="hint" style="text-align:center">${t('now', { x: t('preset' + d.presetIdx) })}</p>` : ''}
+      ${d.colorMode === 'custom' ? ['main', 'sub', 'point'].map(k => `<div class="swrow"><div class="lab">${t('c_' + k)} <small>· ${t('c_' + k + '_sub')}</small></div>
+        <div class="sws">${AC_SWATCH[k].map(c => `<button type="button" class="sw ${d[k].toUpperCase() === c ? 'on' : ''}" data-sw="${k}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div></div>`).join('') + warns.map(w => `<div class="warn">⚠️ ${t('warn_' + w)}</div>`).join('') : ''}
       <div class="phone"><div class="scr"><div id="preview"></div></div></div>`;
   },
   7() {
     if (S.status !== 'draft') return doneView();
     if (!S.langs.includes(previewLang)) previewLang = base();
     const extras = S.langs.slice(1);
-    return `<h2>이렇게 만들어져요</h2>
-      <p class="lead">받는 사람 폰에서 보이는 모습 그대로예요. 고칠 곳이 있으면 이전 단계로 돌아가세요.</p>
-      ${hangulInBase() ? `<div class="callout" id="langWarn"><b>${AC_LANGS[base()]} 명함에 한국어 문구가 들어 있어요.</b><br>
-        기본 언어는 직접 적는 언어라 그대로 보여요. ${S.langs.includes('ko') ? '한국어를 기본 언어로 바꾸면 한국어 문구를 기준으로 ' + AC_LANGS[base()] + '가 자동 번역돼요.' : '한국어로 적은 문구를 ' + AC_LANGS[base()] + '로 번역해서 넣을 수 있어요.'}
-        <button type="button" class="btn brand wide" id="fixLangBtn" style="margin-top:10px">${S.langs.includes('ko') ? '한국어를 기본 언어로 바꾸기' : AC_LANGS[base()] + '로 번역해서 넣기'}</button></div>` : ''}
+    const bl = { lang: AC_LANGS[base()] };
+    return `<h2>${t('prev_h')}</h2>
+      <p class="lead">${t('prev_p')}</p>
+      ${hangulInBase() ? `<div class="callout" id="langWarn"><b>${t('lw_h', bl)}</b><br>
+        ${t('lw_p')} ${S.langs.includes('ko') ? t('lw_ko', bl) : t('lw_tr', bl)}
+        <button type="button" class="btn brand wide" id="fixLangBtn" style="margin-top:10px">${S.langs.includes('ko') ? t('lw_btn_ko') : t('lw_btn_tr', bl)}</button></div>` : ''}
       ${extras.length ? `<div class="tabs" id="tabs">${S.langs.map(l => `<button type="button" class="chip ${l === previewLang ? 'on' : ''}" data-pl="${l}">${AC_LANGS[l]}</button>`).join('')}</div>
         <div class="hint" id="trStatus" style="text-align:center"></div>` : ''}
       <div class="phone"><div class="scr"><div id="preview"></div></div></div>
-      ${extras.length ? `<details class="tr card"><summary>번역 확인·수정</summary>
+      ${extras.length ? `<details class="tr card"><summary>${t('tr_check')}</summary>
         ${extras.map(l => `<div class="trlang"><b>${AC_LANGS[l]}</b>
-          <label class="f">이름 ${S.nameAuto && S.nameAuto[l] && S.nameAuto[l] === S.name[l] ? '<small>· 자동으로 넣었어요, 확인해주세요</small>' : ''}</label><input class="t" data-tr="name" data-l="${l}" value="${esc(S.name[l] || '')}">
-          <label class="f">직함</label><input class="t" data-tr="title" data-l="${l}" value="${esc(S.title[l] || '')}">
-          <label class="f">회사명</label><input class="t" data-tr="company" data-l="${l}" value="${esc(S.company[l] || '')}">
-          ${COPY_FIELDS.map(([k, label]) => `<label class="f">${label}</label><textarea class="t" data-tr="${k}" data-l="${l}">${esc(copyOf(l)[k])}</textarea>`).join('')}
-          <label class="f">전문분야 <small>· 한 줄에 하나</small></label><textarea class="t" data-tr="specialties" data-l="${l}">${esc((copyOf(l).specialties || []).join('\n'))}</textarea></div>`).join('')}
-        <button type="button" class="btn ghost wide" id="retrBtn" style="margin-top:14px">원문 기준으로 다시 번역</button></details>` : ''}
+          <label class="f">${t('name_l')} ${S.nameAuto && S.nameAuto[l] && S.nameAuto[l] === S.name[l] ? `<small>· ${t('auto_name')}</small>` : ''}</label><input class="t" data-tr="name" data-l="${l}" value="${esc(S.name[l] || '')}">
+          <label class="f">${t('title_l')}</label><input class="t" data-tr="title" data-l="${l}" value="${esc(S.title[l] || '')}">
+          <label class="f">${t('company_l')}</label><input class="t" data-tr="company" data-l="${l}" value="${esc(S.company[l] || '')}">
+          ${COPY_FIELDS.map(([k, label]) => `<label class="f">${t(label)}</label><textarea class="t" data-tr="${k}" data-l="${l}">${esc(copyOf(l)[k])}</textarea>`).join('')}
+          <label class="f">${t('specs_l')} <small>· ${t('specs_sub2')}</small></label><textarea class="t" data-tr="specialties" data-l="${l}">${esc((copyOf(l).specialties || []).join('\n'))}</textarea></div>`).join('')}
+        <button type="button" class="btn ghost wide" id="retrBtn" style="margin-top:14px">${t('retr')}</button></details>` : ''}
       <div class="card">
-        <div class="pricebox"><span>결제 금액 · ${S.langs.length}개 언어</span><b>${acWon(acPrice(S.langs))}</b></div>
-        <button type="button" class="btn ghost wide" disabled style="margin-top:12px">결제하기 (준비 중)</button>
-        <p class="hint">지금은 결제 연동 준비 중이라, 발행 요청을 보내면 관리자가 확인 후 발행해드려요.</p>
-        <label class="consent"><input type="checkbox" id="agree"> <span><b>[필수]</b> 입력한 정보가 공개 명함에 게시되는 것과 개인정보 수집·이용에 동의합니다. <a href="${AC_CARDBOOK}privacy.html" target="_blank" rel="noopener">방침 보기</a></span></label>
-        ${IN_APP ? '<div class="inapp" style="margin-top:12px">이 앱 안에서는 Google 로그인이 막혀 있어요. 메뉴에서 <b>다른 브라우저로 열기</b>를 눌러주세요.</div>' : ''}
-        <button type="button" class="btn brand wide" id="pubBtn" style="margin-top:14px">Google 로그인하고 발행 요청</button>
+        <div class="pricebox"><span>${t('pay_l', { n: S.langs.length })}</span><b>${acWon(acPrice(S.langs))}</b></div>
+        <button type="button" class="btn ghost wide" disabled style="margin-top:12px">${t('pay_btn')}</button>
+        <p class="hint">${t('pay_hint')}</p>
+        <label class="consent"><input type="checkbox" id="agree"> <span>${t('consent')} <a href="${AC_CARDBOOK}privacy.html" target="_blank" rel="noopener">${t('policy')}</a></span></label>
+        ${IN_APP ? `<div class="inapp" style="margin-top:12px">${t('inapp2')}</div>` : ''}
+        <button type="button" class="btn brand wide" id="pubBtn" style="margin-top:14px">${t('pub_btn')}</button>
         <div class="err" id="err"></div>
       </div>`;
   },
@@ -397,16 +401,16 @@ function doneView() {
   const live = S.status === 'published';
   return `<div class="done">
       <div class="big">${live ? '🎉' : '📨'}</div>
-      <h2>${live ? '명함이 발행됐어요' : '발행 요청을 보냈어요'}</h2>
-      <p class="lead">${live ? '아래 주소를 카톡·문자로 보내보세요.' : '관리자가 확인하면 바로 열려요. 지금은 본인(로그인한 상태)만 미리 볼 수 있어요.'}</p>
-      <div class="linkbox"><input class="t" readonly value="${esc(url)}" id="myUrl"><button type="button" class="btn" id="copyBtn">복사</button></div>
-      <a class="btn ghost wide" style="margin-top:10px;text-decoration:none" href="${esc(url)}" target="_blank">내 명함 열어보기</a>
+      <h2>${live ? t('done_live_h') : t('done_pend_h')}</h2>
+      <p class="lead">${live ? t('done_live_p') : t('done_pend_p')}</p>
+      <div class="linkbox"><input class="t" readonly value="${esc(url)}" id="myUrl"><button type="button" class="btn" id="copyBtn">${t('copy')}</button></div>
+      <a class="btn ghost wide" style="margin-top:10px;text-decoration:none" href="${esc(url)}" target="_blank">${t('open_card')}</a>
       <div class="card" style="text-align:left">
-        <b style="font-size:14px">💡 카드북에 내 명함을 등록하면</b>
-        <p class="hint" style="font-size:13px">명함 스캔 50장을 추가로 드려요(1회). 발행된 뒤 카드북 → 내 명함에 위 주소를 넣어주세요.</p>
-        <a class="btn ghost wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}" target="_blank">카드북 열기</a>
+        <b style="font-size:14px">${t('cb_h')}</b>
+        <p class="hint" style="font-size:13px">${t('cb_p')}</p>
+        <a class="btn ghost wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}" target="_blank">${t('cb_open')}</a>
       </div>
-      <button type="button" class="btn ghost wide" id="newBtn" style="margin-top:18px;border:0;color:var(--muted)">새 명함 만들기</button>
+      <button type="button" class="btn ghost wide" id="newBtn" style="margin-top:18px;border:0;color:var(--muted)">${t('new_card')}</button>
     </div>`;
 }
 
@@ -497,8 +501,8 @@ const AFTER = {
   },
   7() {
     if (S.status !== 'draft') {
-      $('copyBtn').onclick = async () => { try { await navigator.clipboard.writeText($('myUrl').value); toast('복사됐어요'); } catch (e) { $('myUrl').select(); } };
-      $('newBtn').onclick = () => { if (confirm('지금 명함 정보를 지우고 새로 만들까요?\n(발행한 명함은 그대로 남아요)')) { S = blankState(); IMP.stage = null; save(); render(); } };
+      $('copyBtn').onclick = async () => { try { await navigator.clipboard.writeText($('myUrl').value); toast(t('copied')); } catch (e) { $('myUrl').select(); } };
+      $('newBtn').onclick = () => { if (confirm(t('new_confirm'))) { S = blankState(); IMP.stage = null; save(); render(); } };
       refreshStatus();
       return;
     }
@@ -542,18 +546,18 @@ function fail(msg) { const e = $('err'); if (e) e.textContent = msg; else toast(
 const CHECK = {
   2() {
     // 기본 언어 이름만 필수 — 다른 언어 이름은 번역 단계에서 AI가 표기를 넣고, 틀리면 본인이 고침
-    if (!(S.name[base()] || '').trim()) return fail(`${AC_LANGS[base()]} 이름을 적어주세요`);
+    if (!(S.name[base()] || '').trim()) return fail(t('e_name', { lang: AC_LANGS[base()] }));
     return true;
   },
   3() {
-    if (!S.phone.trim() && !S.email.trim()) return fail('휴대폰이나 이메일 중 하나는 적어주세요');
-    if (S.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.email)) return fail('이메일 형식을 확인해주세요');
+    if (!S.phone.trim() && !S.email.trim()) return fail(t('e_contact'));
+    if (S.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.email)) return fail(t('e_email'));
     S.links = S.links.filter(l => l.url || l.label);
-    if (S.links.some(l => !l.url)) return fail('주소가 빈 링크가 있어요');
+    if (S.links.some(l => !l.url)) return fail(t('e_link'));
     return true;
   },
   4() {
-    if (!(copyOf(base()).slogan || '').trim()) return fail('한 줄 소개를 적거나 AI 초안을 만들어주세요');
+    if (!(copyOf(base()).slogan || '').trim()) return fail(t('e_slogan'));
     return true;
   },
 };
@@ -582,52 +586,52 @@ async function fixBaseLang() {
     if (!(S.name.ko || '').trim()) S.name.ko = S.name[b];   // 기본 언어 이름은 비면 안 됨 → 일단 적어둔 이름을 그대로
     if (/[가-힣]/.test(S.name[b] || '')) S.name[b] = '';   // 한글 이름이었다면 원래 언어 칸은 비워 자동 표기로
     S.langs = ['ko', ...S.langs.filter(l => l !== 'ko')]; S.trKey = ''; previewLang = 'ko';
-    save(); render(); toast('한국어를 기본 언어로 바꿨어요');
+    save(); render(); toast(t('to_ko_done'));
     return;
   }
   // 한국어가 없는 명함: 한국어로 적은 문구를 기본 언어로 번역해서 채움
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 번역 중…';
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('tr_busy');
   try {
     const c = copyOf(b), texts = { title: S.title[b] || '', company: S.company[b] || '', specialties: (c.specialties || []).join('\n') };
     COPY_FIELDS.forEach(([k]) => { texts[k] = c[k] || ''; });
     if (/[가-힣]/.test(S.name[b] || '')) texts.name = S.name[b];
     const x = (await callWorker('/autocard/translate', { from: 'ko', to: [b], texts }))[b];
-    if (!x) throw new Error('번역 결과가 없어요');
+    if (!x) throw new Error(t('tr_none'));
     if (x.title) S.title[b] = x.title; if (x.company) S.company[b] = x.company; if (texts.name && x.name) S.name[b] = x.name;
     COPY_FIELDS.forEach(([k]) => { if (x[k]) c[k] = x[k]; });
     if (x.specialties) c.specialties = splitLines(x.specialties);
-    S.trKey = ''; save(); render(); toast(AC_LANGS[b] + '로 번역해서 넣었어요');
-  } catch (e) { btn.disabled = false; btn.textContent = '다시 시도'; toast('번역을 못 했어요: ' + e.message); }
+    S.trKey = ''; save(); render(); toast(t('tr_into_done', { lang: AC_LANGS[b] }));
+  } catch (e) { btn.disabled = false; btn.textContent = t('retry'); toast(t('tr_fail', { m: e.message })); }
 }
 async function callWorker(path, body, timeoutMs = 30000) {
-  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), timeoutMs);
+  const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     const res = await fetch(AC_WORKER + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.error) throw new Error(data.error || ('서버 오류 ' + res.status));
+    if (!res.ok || data.error) { const er = new Error(data.error || t('srv_err', { s: res.status })); er.data = data; throw er; }
     return data;
   } catch (e) {
-    if (e.name === 'AbortError') throw new Error('응답이 늦어요. 잠시 후 다시 눌러주세요');
-    if (e instanceof TypeError) throw new Error('서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요');
+    if (e.name === 'AbortError') throw new Error(t('slow'));
+    if (e instanceof TypeError) throw new Error(t('offline'));
     throw e;
   }
-  finally { clearTimeout(t); }
+  finally { clearTimeout(timer); }
 }
 
 async function aiDraft() {
   const a = S.answers;
-  if (!a.work.trim() && !a.customer.trim() && !a.referral.trim()) { $('aiErr').textContent = '질문에 하나 이상 답해주세요'; return; }
-  const btn = $('aiBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 문구 만드는 중…'; $('aiErr').textContent = '';
+  if (!a.work.trim() && !a.customer.trim() && !a.referral.trim()) { $('aiErr').textContent = t('e_q'); return; }
+  const btn = $('aiBtn'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('ai_busy'); $('aiErr').textContent = '';
   try {
     const r = await callWorker('/autocard/draft', { lang: base(), answers: a, name: S.name[base()] || '', title: S.title[base()] || '', company: S.company[base()] || '' });
     const c = copyOf(base()); COPY_FIELDS.forEach(([k]) => { if (r[k] && !(S.auto && S.auto[k])) c[k] = r[k]; });   // 이미지 명함 원문(예: 슬로건)은 그대로 둠
     save();
     if (S.step === 4) document.querySelectorAll('[data-copy]').forEach(t => { t.value = c[t.dataset.copy]; });
-    toast('초안이 들어갔어요. 마음에 들게 고쳐 쓰세요');
+    toast(t('ai_done'));
   } catch (e) {
-    if ($('aiErr')) $('aiErr').textContent = 'AI 초안을 못 만들었어요: ' + e.message + ' (직접 적어도 돼요)';
+    if ($('aiErr')) $('aiErr').textContent = t('ai_fail', { m: e.message });
   } finally {
-    if ($('aiBtn')) { $('aiBtn').disabled = false; $('aiBtn').textContent = '✨ AI 초안 다시 만들기'; }
+    if ($('aiBtn')) { $('aiBtn').disabled = false; $('aiBtn').textContent = t('ai_again'); }
   }
 }
 
@@ -641,7 +645,7 @@ async function translateAll(force) {
   const key = JSON.stringify([texts, extras]);
   const st = $('trStatus');
   if (!force && S.trKey === key) return;
-  if (st) st.innerHTML = '<span class="spinner" style="display:inline-block;vertical-align:middle;border-color:#ccc;border-top-color:#333"></span> 번역 중…';
+  if (st) st.innerHTML = '<span class="spinner" style="display:inline-block;vertical-align:middle;border-color:#ccc;border-top-color:#333"></span> ' + t('tr_busy');
   try {
     const r = await callWorker('/autocard/translate', { from: b, to: extras, texts });
     for (const l of extras) {
@@ -654,9 +658,9 @@ async function translateAll(force) {
       S.copy[l].specialties = splitLines(x.specialties);
     }
     S.trKey = key; save();
-    if (S.step === 7 && S.status === 'draft') { render(); toast('번역됐어요. 언어 버튼으로 확인해보세요'); }
+    if (S.step === 7 && S.status === 'draft') { render(); toast(t('tr_done')); }
   } catch (e) {
-    if ($('trStatus')) $('trStatus').innerHTML = `번역을 못 했어요 (${esc(e.message)}) <button type="button" class="chip" onclick="translateAll(true)">다시 시도</button>`;
+    if ($('trStatus')) $('trStatus').innerHTML = `${t('tr_fail', { m: esc(e.message) })} <button type="button" class="chip" onclick="translateAll(true)">${t('retry')}</button>`;
   }
 }
 
@@ -681,8 +685,8 @@ async function currentIdToken() {
 }
 async function adminLogin() {
   try { const { auth } = fb(); await auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL); await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-    toast('로그인됐어요. 이미지를 다시 골라주세요'); IMP.stage = null; render(); }
-  catch (e) { if (e.code !== 'auth/popup-closed-by-user') toast('로그인 실패: ' + (e.message || e.code)); }
+    toast(t('login_ok_retry')); IMP.stage = null; render(); }
+  catch (e) { if (e.code !== 'auth/popup-closed-by-user') toast(t('login_fail', { m: e.message || e.code })); }
 }
 async function sha256Hex(b64) {
   const bin = atob(b64), bytes = new Uint8Array(bin.length);
@@ -691,12 +695,12 @@ async function sha256Hex(b64) {
 }
 $('importInput').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
-  if (!/^image\//.test(f.type)) { toast('이미지 파일만 올릴 수 있어요'); return; }
+  if (!/^image\//.test(f.type)) { toast(t('img_only')); return; }
   try {
     // 세로로 긴 포스터형은 1200px이면 작은 글씨가 뭉개져서 1600px
     IMP.img = await resizeImage(f, 1600, false);
     const im = await loadImg(IMP.img); IMP.w = im.naturalWidth; IMP.h = im.naturalHeight; IMP.el = im;
-  } catch (err) { toast('이미지를 읽지 못했어요. 다른 이미지로 해주세요'); return; }
+  } catch (err) { toast(t('img_bad')); return; }
   S.mode = 'import'; IMP.stage = 'reading'; IMP.t0 = Date.now(); render();
   try {
     const b64 = IMP.img.split(',')[1];
@@ -706,7 +710,8 @@ $('importInput').onchange = async e => {
     if (r.photoBox) { IMP.stage = 'photo'; IMP.crop = initialCrop(r.photoBox); render(); }
     else { finishImport(); }
   } catch (err) {
-    IMP.stage = 'error'; IMP.error = '명함을 읽지 못했어요: ' + err.message; IMP.limited = /하루/.test(err.message); render();
+    IMP.limited = !!(err.data && err.data.limited);
+    IMP.stage = 'error'; IMP.error = IMP.limited ? t('imp_limit') : t('imp_fail', { m: err.message }); render();
   }
 };
 function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = src; }); }
@@ -725,15 +730,15 @@ function applyImport(r) {
   set('email', r.email, () => { S.email = r.email; });
   set('chapter', r.chapter, () => { S.chapter = r.chapter; S.showChapter = true; });
   // 링크: 홈페이지 + SNS(인스타·블로그 등). 이미 있는 주소는 건너뜀, 최대 3개
-  const found = [r.website ? { label: '홈페이지', url: r.website } : null, ...(r.sns || [])].filter(Boolean)
+  const found = [r.website ? { label: t('homepage'), url: r.website } : null, ...(r.sns || [])].filter(Boolean)
     .filter(l => !S.links.some(x => x.url === l.url)).map(l => ({ ...l, auto: true }));
   if (found.length) S.links = [...found, ...S.links].slice(0, AC_MAX_LINKS);
   set('slogan', r.slogan, () => { c.slogan = r.slogan; });
   set('specialties', r.specialties && r.specialties.length, () => { c.specialties = r.specialties.slice(); });
   // 4단계 질문 초안: Q1 = 하는 일(전문분야·경력), Q2 = 슬로건, Q3 = 이미지에 리퍼럴이 있을 때만
   const q1 = [r.company && r.title ? `${r.company} ${r.title}` : r.company || r.title,
-    r.specialties && r.specialties.length ? '전문분야: ' + r.specialties.join(', ') : '',
-    r.career && r.career.length ? '경력: ' + r.career.join(', ') : ''].filter(Boolean).join('\n');
+    r.specialties && r.specialties.length ? t('specs_l') + ': ' + r.specialties.join(', ') : '',
+    r.career && r.career.length ? t('career') + ': ' + r.career.join(', ') : ''].filter(Boolean).join('\n');
   set('q1', q1 && !S.answers.work.trim(), () => { S.answers.work = q1; });
   set('q2', r.slogan && !S.answers.customer.trim(), () => { S.answers.customer = r.slogan; });
   set('q3', r.referral && r.referral.length && !S.answers.referral.trim(), () => { S.answers.referral = r.referral.join('\n'); });
@@ -748,7 +753,7 @@ function applyImport(r) {
 function finishImport() {
   IMP.stage = null; S.step = 1; save(); render();
   const n = Object.keys(S.auto || {}).length;
-  toast(n ? `이미지에서 ${n}개 칸을 채웠어요. 노란 칸만 확인해주세요` : '읽을 수 있는 글자가 적었어요. 직접 채워주세요');
+  toast(n ? t('imp_filled', { n }) : t('imp_few'));
   IMP.img = ''; IMP.el = null;   // 원본은 여기서 버림(저장하지 않음)
 }
 
@@ -811,13 +816,13 @@ let pickTarget = null, afterPick = null;
 function pickImage(which) { pickTarget = which; $('fileInput').value = ''; $('fileInput').click(); }
 $('fileInput').onchange = async e => {
   const f = e.target.files[0]; if (!f || !pickTarget) return;
-  if (!/^image\//.test(f.type)) { toast('이미지 파일만 올릴 수 있어요'); return; }
+  if (!/^image\//.test(f.type)) { toast(t('img_only')); return; }
   try {
     const keepPng = pickTarget === 'second' && S.images.secondType === 'logo' && /png|webp|gif/.test(f.type);  // 로고 투명 배경 유지
     S.images[pickTarget] = await resizeImage(f, 1200, keepPng);
     save();
     if (afterPick) { const fn = afterPick; afterPick = null; fn(); } else render();
-  } catch (err) { toast('사진을 읽지 못했어요. 다른 사진으로 해주세요'); }
+  } catch (err) { toast(t('photo_bad')); }
 };
 function resizeImage(file, max, png) {
   return new Promise((resolve, reject) => {
@@ -863,9 +868,9 @@ async function signIn() {
 
 async function publish() {
   const err = $('err'), btn = $('pubBtn');
-  if (!$('agree').checked) { err.textContent = '동의에 체크해주세요'; return; }
-  if (hangulInBase() && !confirm(`${AC_LANGS[base()]} 명함에 한국어 문구가 그대로 있어요. 이대로 발행 요청할까요?`)) return;
-  err.textContent = ''; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 로그인 중…';
+  if (!$('agree').checked) { err.textContent = t('agree_need'); return; }
+  if (hangulInBase() && !confirm(t('ko_confirm', { lang: AC_LANGS[base()] }))) return;
+  err.textContent = ''; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('signing');
   try {
     const user = await signIn();
     if (!user) return;
@@ -873,9 +878,9 @@ async function publish() {
     render();
   } catch (e) {
     console.error(e);
-    err.textContent = '발행 요청 실패: ' + (e.message || e.code);
+    err.textContent = t('pub_fail', { m: e.message || e.code });
   } finally {
-    if ($('pubBtn')) { $('pubBtn').disabled = false; $('pubBtn').textContent = 'Google 로그인하고 발행 요청'; }
+    if ($('pubBtn')) { $('pubBtn').disabled = false; $('pubBtn').textContent = t('pub_btn'); }
   }
 }
 
@@ -884,7 +889,7 @@ async function doPublish(user, progress) {
   const ref = S.cardId ? db.collection('autocards').doc(S.cardId) : db.collection('autocards').doc();
   const now = Date.now();
   if (!S.createdAt) S.createdAt = now;
-  progress('명함 자리 만드는 중…');
+  progress(t('pg_doc'));
   // Storage 규칙이 이 문서의 ownerUid로 주인을 확인하므로, 사진보다 문서를 먼저 만든다
   await ref.set({ ownerUid: user.uid, ownerEmail: user.email, status: 'draft', createdAt: S.createdAt, updatedAt: now }, { merge: true });
   S.cardId = ref.id; save();
@@ -892,14 +897,14 @@ async function doPublish(user, progress) {
   const images = { ...S.images };
   for (const k of ['profile', 'second']) {
     if (!images[k] || !images[k].startsWith('data:')) continue;
-    progress(k === 'profile' ? '프로필 사진 올리는 중…' : '두 번째 사진 올리는 중…');
+    progress(k === 'profile' ? t('pg_profile') : t('pg_second'));
     const png = images[k].startsWith('data:image/png');
     const snap = await storage.ref(`autocards/${ref.id}/${k}.${png ? 'png' : 'jpg'}`).putString(images[k], 'data_url', { contentType: png ? 'image/png' : 'image/jpeg', cacheControl: 'public,max-age=31536000' });
     images[k] = await snap.ref.getDownloadURL();
   }
   S.images = images; save();
 
-  progress('발행 요청 보내는 중…');
+  progress(t('pg_send'));
   const data = { ...cardData(), images, ownerUid: user.uid, ownerEmail: user.email, status: 'pending', createdAt: S.createdAt, updatedAt: Date.now() };
   if (S.ref) data.referredBy = S.ref;
   await ref.set(data);
@@ -926,12 +931,19 @@ async function refreshStatus() {
     const res = await auth.getRedirectResult();
     const user = res.user || auth.currentUser;
     if (!user || S.status !== 'draft') return;
-    toast('로그인됐어요. 발행 요청을 이어서 보낼게요');
+    toast(t('resume'));
     await doPublish(user, m => toast(m));
     render();
-  } catch (e) { toast('발행 요청 실패: ' + e.message); }
+  } catch (e) { toast(t('pub_fail', { m: e.message })); }
 })();
 
+// 화면 언어 선택(오른쪽 위) — 아직 아무것도 안 적었으면 명함 기본 언어도 같이 바꿈
+$('uiLang').innerHTML = AC_UI_LANGS.map(l => `<option value="${l}" ${l === UI ? 'selected' : ''}>${AC_LANGS[l]}</option>`).join('');
+$('uiLang').onchange = e => {
+  acSetUi(e.target.value);
+  if (S.status === 'draft' && S.langs.length === 1 && !(S.name[base()] || '').trim() && !(S.title[base()] || '').trim()) S.langs = [UI];
+  save(); render();
+};
 render();
 </script>
 </body>

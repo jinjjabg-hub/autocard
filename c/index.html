@@ -39,9 +39,9 @@
 <div id="banner"></div>
 <div class="wrap">
   <div id="langbar"></div>
-  <div id="card"><div class="state"><div class="spin"></div>명함을 불러오는 중…</div></div>
+  <div id="card"><div class="state"><div class="spin"></div><span id="loadingTxt"></span></div></div>
 </div>
-<div class="modal" id="qrModal"><div class="box"><div id="qrName" style="font-weight:800;margin-bottom:4px"></div><div id="qr"></div><button type="button" onclick="document.getElementById('qrModal').classList.remove('on')">닫기</button></div></div>
+<div class="modal" id="qrModal"><div class="box"><div id="qrName" style="font-weight:800;margin-bottom:4px"></div><div id="qr"></div><button type="button" id="qrClose" onclick="document.getElementById('qrModal').classList.remove('on')"></button></div></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
@@ -50,17 +50,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="../assets/common.js"></script>
 <script src="../assets/card.js"></script>
+<script src="../assets/i18n.js"></script>
 <script>
 const params = new URLSearchParams(location.search);
 const cardId = params.get('id');
 const $ = id => document.getElementById(id);
 let card = null, lang = 'ko';
+$('loadingTxt').textContent = t('v_loading'); $('qrClose').textContent = t('close');
 
 function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2200); }
 function showState(title, body) { $('card').innerHTML = `<div class="state"><b>${title}</b>${body || ''}</div>`; }
 
 async function load() {
-  if (!cardId) return showState('명함 주소가 올바르지 않아요', '받은 링크를 다시 확인해주세요.');
+  if (!cardId) return showState(t('v_badurl_h'), t('v_badurl_p'));
   const { auth, db } = acInitFirebase();
   const ref = db.collection('autocards').doc(cardId);
   let snap;
@@ -69,16 +71,17 @@ async function load() {
   } catch (e) {
     // 공개 전이면 본인·관리자만 읽을 수 있음 → 로그인 상태가 복원되길 기다렸다가 한 번 더
     const user = await new Promise(r => { const u = auth.onAuthStateChanged(x => { u(); r(x); }); });
-    if (!user) return showState('아직 공개되지 않은 명함이에요', '관리자 승인 후 열려요.<br>제작하신 분이라면 <a href="../">제작 앱</a>에서 로그인한 상태로 다시 열어주세요.');
-    try { snap = await ref.get(); } catch (e2) { return showState('아직 공개되지 않은 명함이에요', '관리자 승인 후 열려요.'); }
+    if (!user) return showState(t('v_priv_h'), t('v_priv_p') + '<br>' + t('v_priv_owner'));
+    try { snap = await ref.get(); } catch (e2) { return showState(t('v_priv_h'), t('v_priv_p')); }
   }
-  if (!snap.exists) return showState('명함을 찾을 수 없어요', '삭제되었거나 주소가 잘못됐어요.');
+  if (!snap.exists) return showState(t('v_nf_h'), t('v_nf_p'));
   card = snap.data();
   if (card.status !== 'published') {
-    $('banner').innerHTML = `<div class="banner">미리보기 — ${card.status === 'pending' ? '승인 대기 중이라 아직 다른 사람에게는 보이지 않아요' : '아직 발행 요청 전이에요'}</div>`;
+    $('banner').innerHTML = `<div class="banner">${card.status === 'pending' ? t('v_prev_pending') : t('v_prev_draft')}</div>`;
   }
+  // 명함 언어: 주소의 &lang= → 보는 사람의 화면 언어(명함에 그 언어가 있으면) → 기본 언어
   const want = params.get('lang');
-  lang = card.langs.includes(want) ? want : card.langs[0];
+  lang = card.langs.includes(want) ? want : card.langs.includes(UI) ? UI : card.langs[0];
   draw();
 }
 
@@ -89,7 +92,7 @@ function draw() {
   document.documentElement.lang = lang;
   document.querySelector('meta[name=theme-color]').content = card.design.main;
   // "나도 만들기" → 어떤 명함을 보고 왔는지 기록 (확산 고리가 실제로 도는지 숫자로 확인하기 위해)
-  const mk = document.querySelector('.ac-make'); if (mk) mk.href = '../?ref=' + encodeURIComponent(cardId);
+  const mk = document.querySelector('.ac-make'); if (mk) mk.href = '../?ref=' + encodeURIComponent(cardId) + '&ui=' + lang;   // 보던 언어로 제작 앱이 열림
   // 선택 언어가 2개 이상일 때만 상단 언어 전환
   $('langbar').innerHTML = card.langs.length > 1
     ? `<div class="langbar">${card.langs.map(l => `<button type="button" class="${l === lang ? 'on' : ''}" data-lang="${l}">${l.toUpperCase()}</button>`).join('')}</div>` : '';
@@ -137,7 +140,7 @@ function saveVcf() {
 async function share() {
   const v = acView(card, lang), url = acCardUrl(cardId);
   if (navigator.share) { try { await navigator.share({ title: v.name, text: v.slogan || v.name, url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
-  try { await navigator.clipboard.writeText(url); } catch (e) { prompt('주소를 복사하세요', url); return; }
+  try { await navigator.clipboard.writeText(url); } catch (e) { prompt(t('copy_prompt'), url); return; }
   toast(v.ui.copied);
 }
 
@@ -149,7 +152,7 @@ function showQr() {
   $('qrModal').classList.add('on');
 }
 
-load().catch(e => showState('명함을 불러오지 못했어요', '잠시 후 다시 열어주세요.<br><small>' + acEsc(e.message) + '</small>'));
+load().catch(e => showState(t('v_err_h'), t('v_err_p') + '<br><small>' + acEsc(e.message) + '</small>'));
 </script>
 </body>
 </html>

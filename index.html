@@ -870,7 +870,7 @@ async function doPublish(user, progress) {
   const now = Date.now();
   if (!S.createdAt) S.createdAt = now;
   progress(t('pg_doc'));
-  // Storage 규칙이 이 문서의 ownerUid로 주인을 확인하므로, 사진보다 문서를 먼저 만든다
+  // 명함 자리(문서)를 먼저 만들어 id를 받고, 사진은 autocards/{내 uid}/{명함 id}/ 에 올린다(Storage 규칙이 폴더 uid로 주인 확인)
   await ref.set({ ownerUid: user.uid, ownerEmail: user.email, status: 'draft', createdAt: S.createdAt, updatedAt: now }, { merge: true });
   S.cardId = ref.id; save();
 
@@ -879,7 +879,7 @@ async function doPublish(user, progress) {
     if (!images[k] || !images[k].startsWith('data:')) continue;
     progress(k === 'profile' ? t('pg_profile') : t('pg_second'));
     const png = images[k].startsWith('data:image/png');
-    const snap = await storage.ref(`autocards/${ref.id}/${k}.${png ? 'png' : 'jpg'}`).putString(images[k], 'data_url', { contentType: png ? 'image/png' : 'image/jpeg', cacheControl: 'public,max-age=31536000' });
+    const snap = await storage.ref(`autocards/${user.uid}/${ref.id}/${k}.${png ? 'png' : 'jpg'}`).putString(images[k], 'data_url', { contentType: png ? 'image/png' : 'image/jpeg', cacheControl: 'public,max-age=31536000' });
     images[k] = await snap.ref.getDownloadURL();
   }
   S.images = images; save();

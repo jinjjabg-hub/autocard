@@ -146,6 +146,7 @@
     <div class="stepname" id="stepname"></div>
   </header>
   <main id="screen"></main>
+  <footer id="bizfoot" style="padding:0 16px 130px;font-size:11.5px;color:var(--muted);line-height:1.6;text-align:center"></footer>
 </div>
 <nav class="bottom"><div class="in">
   <button type="button" class="btn ghost" id="prevBtn">이전</button>
@@ -159,6 +160,7 @@
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-storage-compat.js"></script>
+<script src="https://js.tosspayments.com/v2/standard"></script>
 <script src="assets/common.js"></script>
 <script src="assets/card.js"></script>
 <script src="assets/i18n.js"></script>
@@ -275,7 +277,8 @@ if (/KAKAOTALK/i.test(UA) && /Android/i.test(UA)) location.href = 'intent://' + 
 function render() {
   document.title = t('doc_title'); $('brand').textContent = t('brand');
   $('prevBtn').textContent = t('prev'); $('nextBtn').textContent = t('next');
-  $('price').textContent = acWon(acPrice(S.langs));
+  $('price').textContent = acWon(acPrice(S.langs), false);
+  $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
   $('bar').style.width = (S.step / 7 * 100) + '%';
   $('stepname').textContent = S.step ? `${S.step} / 7 · ${t('step' + S.step)}` : t('start');
   $('prevBtn').style.visibility = S.step >= (S.editing ? 3 : 1) && (S.status === 'draft' || S.editing) ? 'visible' : 'hidden';   // 수정은 2단계부터(언어는 결제와 연결돼 못 바꿈)
@@ -285,6 +288,7 @@ function render() {
   (AFTER[S.step] || (() => {}))();
   attachCounters();
   if ($('editCancel')) $('editCancel').onclick = () => { if (confirm(t('edit_cancel_confirm'))) exitEdit(); };
+  bindAddLang();
   window.scrollTo(0, 0);
 }
 
@@ -434,11 +438,10 @@ const VIEWS = {
         <button type="button" class="btn ghost wide" id="retrBtn" style="margin-top:14px">${t('retr')}</button></details>` : ''}
       ${S.editing ? `<div class="card"><button type="button" class="btn brand wide" id="saveBtn">${t('save_changes')}</button><div class="err" id="err"></div></div>` : `<div class="card">
         <div class="pricebox"><span>${t('pay_l', { n: S.langs.length })}</span><b>${acWon(acPrice(S.langs))}</b></div>
-        <button type="button" class="btn ghost wide" disabled style="margin-top:12px">${t('pay_btn')}</button>
-        <p class="hint">${t('pay_hint')}</p>
         <label class="consent"><input type="checkbox" id="agree"> <span>${t('consent')} <a href="${AC_CARDBOOK}privacy.html" target="_blank" rel="noopener">${t('policy')}</a></span></label>
         ${IN_APP ? `<div class="inapp" style="margin-top:12px">${t('inapp2')}</div>` : ''}
-        <button type="button" class="btn brand wide" id="pubBtn" style="margin-top:14px">${t('pub_btn')}</button>
+        <button type="button" class="btn brand wide" id="pubBtn" style="margin-top:14px">${t('pay_pub_btn', { price: acWon(acPrice(S.langs), false) })}</button>
+        <p class="hint">${t('pay_note')} <a href="terms.html" target="_blank" rel="noopener">${t('terms_link')}</a></p>
         <div class="err" id="err"></div>
       </div>`}`;
   },
@@ -962,10 +965,37 @@ async function editCard(id) {
   const dyn = S.langs.filter(l => !AC_UI_LANGS.includes(l));
   if (dyn.length) Promise.all(dyn.map(l => acLoadLang(l).catch(() => false))).then(render);
 }
+let ADDL = null;   // 언어 추가 패널: null(닫힘) | [고른 언어]
 function editBanner() {
+  const canAdd = S.status === 'published' && S.langs.length < AC_MAX_LANGS;
   return `<div class="callout" style="margin-bottom:6px">${t('edit_banner', { name: esc(S.name[W()] || S.name[base()] || '') })}
-    <br><small>${t('edit_lang_note', { langs: S.langs.map(l => AC_LANGS[l]).join(' · ') })}</small>
-    <br><button type="button" class="linkbtn" id="editCancel">${t('edit_cancel')}</button></div>`;
+    <br><small>${S.langs.map(l => AC_LANGS[l]).join(' · ')}</small>
+    <br>${canAdd ? `<button type="button" class="linkbtn" id="addLangBtn" style="margin-right:14px">${t('add_lang_btn')}</button>` : ''}<button type="button" class="linkbtn" id="editCancel">${t('edit_cancel')}</button>
+    ${ADDL ? addLangPanel() : ''}</div>`;
+}
+function addLangPanel() {
+  const room = AC_MAX_LANGS - S.langs.length;
+  const avail = Object.keys(AC_LANGS).filter(l => !S.langs.includes(l));
+  const price = ADDL.length * AC_EXTRA_LANG_PRICE;
+  return `<div style="margin-top:10px"><b style="font-size:13px">${t('add_lang_h', { n: AC_MAX_LANGS, add: acWon(AC_EXTRA_LANG_PRICE, false) })}</b>
+    <div class="chips" style="margin-top:8px">${avail.map(l => `<button type="button" class="chip ${ADDL.includes(l) ? 'on' : ''}" data-addl="${l}" ${!ADDL.includes(l) && ADDL.length >= room ? 'disabled' : ''}>${AC_LANGS[l]}</button>`).join('')}</div>
+    <button type="button" class="btn brand wide" id="addLangPay" style="margin-top:10px" ${ADDL.length ? '' : 'disabled'}>${t('add_lang_pay', { price: acWon(price, false) })}</button><div class="err" id="addErr"></div></div>`;
+}
+function bindAddLang() {
+  if ($('addLangBtn')) $('addLangBtn').onclick = () => { ADDL = ADDL ? null : []; render(); };
+  document.querySelectorAll('[data-addl]').forEach(b => b.onclick = () => { const l = b.dataset.addl; ADDL = ADDL.includes(l) ? ADDL.filter(x => x !== l) : [...ADDL, l]; render(); });
+  if ($('addLangPay')) $('addLangPay').onclick = async () => {
+    const btn = $('addLangPay'); btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('paying');
+    try {
+      const user = await signIn('edit'); if (!user) return;
+      const want = [...S.langs, ...ADDL];
+      // 규칙: 발행된 명함의 언어는 직접 못 바꾸고 upgrade 요청만 쓸 수 있음 → Worker가 결제 확인 후 반영
+      await fb().db.collection('autocards').doc(S.cardId).update({ upgrade: { langs: want, at: Date.now() } });
+      save();
+      await tossPay(user, ADDL.length * AC_EXTRA_LANG_PRICE, `ac_${S.cardId}_up_${Date.now()}`, t('order_up', { n: ADDL.length }), { kind: 'up', cardId: S.cardId });
+    } catch (e) { if ($('addErr')) $('addErr').textContent = t('pub_fail', { m: e.message || e.code }); }
+    finally { if ($('addLangPay')) { $('addLangPay').disabled = false; $('addLangPay').textContent = t('add_lang_pay', { price: acWon(ADDL.length * AC_EXTRA_LANG_PRICE, false) }); } }
+  };
 }
 function exitEdit() {
   try { localStorage.removeItem(EDIT_KEY); } catch (e) {}
@@ -999,13 +1029,18 @@ async function publish() {
   try {
     const user = await signIn();
     if (!user) return;
-    await doPublish(user, msg => { btn.innerHTML = '<span class="spinner"></span> ' + msg; });
+    const admin = AC_ADMIN_EMAILS.includes(user.email);
+    // 명함 내용을 먼저 저장(작성 중 상태) → 결제 → Worker가 결제를 확인하면 바로 발행. 관리자는 결제 없이 바로 발행
+    await doPublish(user, msg => { btn.innerHTML = '<span class="spinner"></span> ' + msg; }, admin ? 'published' : 'draft');
+    if (admin) { toast(t('admin_free')); render(); return; }
+    btn.innerHTML = '<span class="spinner"></span> ' + t('paying');
+    await tossPay(user, acPrice(S.langs), `ac_${S.cardId}_pub_${Date.now()}`, t('order_pub', { n: S.langs.length }), { kind: 'pub', cardId: S.cardId });
     render();
   } catch (e) {
     console.error(e);
     err.textContent = t('pub_fail', { m: e.message || e.code });
   } finally {
-    if ($('pubBtn')) { $('pubBtn').disabled = false; $('pubBtn').textContent = t('pub_btn'); }
+    if ($('pubBtn')) { $('pubBtn').disabled = false; $('pubBtn').textContent = t('pay_pub_btn', { price: acWon(acPrice(S.langs), false) }); }
   }
 }
 
@@ -1022,7 +1057,22 @@ async function uploadImages(user, cardId, progress) {
   S.images = images; save();
   return images;
 }
-async function doPublish(user, progress) {
+// 토스 결제창 → 결제가 끝나면 successUrl(?pay=ok&paymentKey=…&orderId=…&amount=…)로 돌아옴 → payReturn()이 Worker에 확인 요청
+async function tossPay(user, amount, orderId, orderName, info) {
+  if (typeof TossPayments !== 'function') throw new Error('Toss');
+  localStorage.setItem('autocard_pay', JSON.stringify({ ...info, orderId }));
+  const base = location.origin + location.pathname;
+  const payment = TossPayments(AC_TOSS_CLIENT_KEY).payment({ customerKey: user.uid });
+  try {
+    await payment.requestPayment({ method: 'CARD', amount: { currency: 'KRW', value: amount }, orderId, orderName,
+      successUrl: base + '?pay=ok', failUrl: base + '?pay=fail', customerEmail: user.email || undefined, customerName: S.name[W()] || user.displayName || undefined });
+  } catch (e) {
+    localStorage.removeItem('autocard_pay');
+    if (e.code === 'USER_CANCEL' || e.code === 'PAY_PROCESS_CANCELED') { toast(t('pay_cancel')); return; }
+    throw e;
+  }
+}
+async function doPublish(user, progress, status = 'draft') {
   const { db } = fb();
   const ref = S.cardId ? db.collection('autocards').doc(S.cardId) : db.collection('autocards').doc();
   const now = Date.now();
@@ -1035,10 +1085,11 @@ async function doPublish(user, progress) {
   const images = await uploadImages(user, ref.id, progress);
 
   progress(t('pg_send'));
-  const data = { ...cardData(), images, ownerUid: user.uid, ownerEmail: user.email, status: 'pending', createdAt: S.createdAt, updatedAt: Date.now() };
+  const data = { ...cardData(), images, ownerUid: user.uid, ownerEmail: user.email, status, createdAt: S.createdAt, updatedAt: Date.now() };
+  if (status === 'published') Object.assign(data, { publishedAt: Date.now(), approvedBy: user.email });
   if (S.ref) data.referredBy = S.ref;
   await ref.set(data);
-  S.status = 'pending'; save();
+  S.status = status; save();
 }
 
 // 완료 화면에서 승인 여부 새로고침
@@ -1069,6 +1120,27 @@ async function refreshStatus() {
     await doPublish(user, m => toast(m));
     render();
   } catch (e) { toast(t('pub_fail', { m: e.message })); }
+})();
+
+// 결제창에서 돌아왔을 때 — Worker가 토스 승인 + 금액 재확인 후 발행(또는 언어 추가)
+(async function payReturn() {
+  const q = new URLSearchParams(location.search), pay = q.get('pay'); if (!pay) return;
+  history.replaceState(null, '', location.pathname);
+  let info = {}; try { info = JSON.parse(localStorage.getItem('autocard_pay') || '{}'); } catch (e) {}
+  localStorage.removeItem('autocard_pay');
+  if (pay === 'fail') { const c = q.get('code') || ''; toast(/CANCEL/.test(c) ? t('pay_cancel') : t('pay_fail', { m: q.get('message') || c })); return; }
+  toast(t('pay_confirming'));
+  try {
+    const d = await callWorker('/autocard/pay/confirm', { paymentKey: q.get('paymentKey'), orderId: q.get('orderId'), amount: Number(q.get('amount')) }, 40000);
+    if (d.kind === 'pub') {
+      if (S.cardId === d.cardId) { S.status = 'published'; S.step = 7; save(); render(); }
+      toast(t('pay_ok'));
+    } else {
+      // 언어 추가: 새 언어 칸은 번역으로 채우고, 사용자가 확인 후 저장
+      if (S.editing && S.cardId === d.cardId) { d.langs.forEach(acRegisterLang); S.langs = d.langs; S.trKey = ''; S.step = 7; save(); render(); }
+      toast(t('add_lang_ok'));
+    }
+  } catch (e) { toast(t('pay_confirm_fail', { m: e.message })); }
 })();
 
 // 화면 언어 선택(오른쪽 위) — 아직 아무것도 안 적었으면 명함 기본 언어도 같이 바꿈

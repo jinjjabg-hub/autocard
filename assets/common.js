@@ -17,6 +17,8 @@ const AC_ADMIN_EMAILS = ['jinjjabg@gmail.com'];   // firestore.rules의 관리�
 const AC_BASE_PRICE = 5900, AC_EXTRA_LANG_PRICE = 5000, AC_MAX_LANGS = 4, AC_MAX_LINKS = 3;
 function acPrice(langs) { return AC_BASE_PRICE + Math.max(0, (langs || []).length - 1) * AC_EXTRA_LANG_PRICE; }
 function acWon(n) { return n.toLocaleString('ko-KR') + '원'; }
+// 토스페이먼츠 클라이언트 키(공개용) — 카드북과 같은 상점. 심사 통과 후 live_ck_ 로 교체
+const AC_TOSS_CLIENT_KEY = 'test_ck_PBal2vxj811KJW5OMqpR85RQgOAN';
 
 function acInitFirebase() {
   if (!firebase.apps.length) firebase.initializeApp(AC_FIREBASE);

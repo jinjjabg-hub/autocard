@@ -2,7 +2,7 @@
 // 같은 데이터 → 템플릿 함수 6개 중 하나 → HTML. 그래서 미리보기에서 본 모습 그대로 발행된다.
 
 const AC_LANGS = {
-  ko: '한국어', en: 'English', ja: '日本語', zh: '中文', vi: 'Tiếng Việt', mn: 'Монгол',
+  ko: '한국어', en: 'English', ja: '日本語', zh: '中文', vi: 'Tiếng Việt', mn: 'Монгол', th: 'ไทย',
 };
 
 // 명함 화면의 고정 문구(버튼 이름 등) — 사용자가 쓴 문구가 아니므로 AI 번역 없이 미리 준비
@@ -13,6 +13,7 @@ const AC_UI = {
   zh: { connect: '联系方式', saveShort: 'CardBook', specialties: '专业领域', chapter: 'BNI {c} 分会', work: '我的工作', help: '我能帮助的人', call: '电话', sms: '短信', email: '邮件', save: '保存到CardBook', saveSub: '收到的名片一键保存', contact: '保存联系人', referral: '请为我介绍这样的人', share: '分享', qr: '二维码', make: '5,900韩元制作我的名片', copied: '已复制' },
   vi: { connect: 'Liên hệ', saveShort: 'CardBook', specialties: 'Lĩnh vực chuyên môn', chapter: 'BNI Chapter {c}', work: 'Công việc của tôi', help: 'Tôi giúp ai', call: 'Gọi', sms: 'Nhắn tin', email: 'Email', save: 'Lưu vào CardBook', saveSub: 'Lưu mọi danh thiếp ở một nơi', contact: 'Lưu danh bạ', referral: 'Xin giới thiệu giúp tôi', share: 'Chia sẻ', qr: 'Mã QR', make: 'Tạo danh thiếp chỉ 5.900₩', copied: 'Đã sao chép' },
   mn: { connect: 'Холбоо барих', saveShort: 'CardBook', specialties: 'Мэргэшсэн чиглэл', chapter: 'BNI {c} бүлэг', work: 'Миний ажил', help: 'Би хэнд тусалдаг вэ', call: 'Залгах', sms: 'Мессеж', email: 'И-мэйл', save: 'CardBook-д хадгалах', saveSub: 'Нэрийн хуудсаа нэг дор хадгална', contact: 'Холбоо барих хадгалах', referral: 'Ийм хүмүүсийг танилцуулна уу', share: 'Хуваалцах', qr: 'QR код', make: '5,900₩-өөр нэрийн хуудас хийх', copied: 'Хуулсан' },
+  th: { connect: 'ติดต่อ', saveShort: 'CardBook', specialties: 'ความเชี่ยวชาญ', chapter: 'BNI แชปเตอร์ {c}', work: 'งานที่ฉันทำ', help: 'ฉันช่วยใครได้บ้าง', call: 'โทร', sms: 'ข้อความ', email: 'อีเมล', save: 'บันทึกลง CardBook', saveSub: 'เก็บนามบัตรที่ได้รับไว้ในที่เดียว', contact: 'บันทึกรายชื่อ', referral: 'อยากให้แนะนำคนแบบนี้', share: 'แชร์', qr: 'คิวอาร์โค้ด', make: 'สร้างนามบัตรของคุณเองในราคา ₩5,900', copied: 'คัดลอกลิงก์แล้ว' },
 };
 
 // ===== 색상 =====

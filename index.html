@@ -291,7 +291,7 @@ function render() {
   document.title = t('doc_title'); $('brand').textContent = t('brand');
   $('prevBtn').textContent = t('prev'); $('nextBtn').textContent = t('next');
   $('price').textContent = acWon(acPrice(S.langs), false);
-  $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · ${UI === 'ko' ? '사업자등록번호' : 'Business reg. no.'} 253-63-00948 · ${UI === 'ko' ? '통신판매업 신고' : 'Mail-order reg. no.'} 2026-부산사상구-0340 · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
+  $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · ${UI === 'ko' ? '사업자등록번호' : 'Business reg. no.'} 253-63-00948 · ${UI === 'ko' ? '통신판매업 신고' : 'Mail-order reg. no.'} 2026-부산사상구-0340 · ${UI === 'ko' ? '부산광역시 사상구 가야대로378번길 1 (주례동, 팍스타운) 1704호 · 전화' : '1704, 1 Gaya-daero 378beon-gil, Sasang-gu, Busan · Tel'} 010-5334-2544 · <a href="shop.html" target="_blank" rel="noopener" style="color:inherit">${UI === 'ko' ? '상품 안내' : 'Products & prices'}</a> · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
   $('bar').style.width = (S.step / 7 * 100) + '%';
   $('stepname').textContent = S.step ? `${S.step} / 7 · ${t('step' + S.step)}` : t('start');
   $('prevBtn').style.visibility = S.step >= (S.editing ? 3 : 1) && (S.status === 'draft' || S.editing) ? 'visible' : 'hidden';   // 수정은 2단계부터(언어는 결제와 연결돼 못 바꿈)

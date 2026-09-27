@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>티엠링크 상품 안내 · 자동 명함 · 카드북</title>
+<meta name="description" content="티엠링크(T.M Link) 판매 상품 안내 — 자동 명함, 카드북 이미지 명함 인식 충전. 가격·제공 기간·환불 정책.">
+<!-- 토스페이먼츠 상점 심사용 공개 상품 안내 페이지. 로그인 없이 상품·가격·제공 기간·환불 정책·사업자 정보를 한곳에서 확인할 수 있게 한다.
+     가격을 바꾸면 여기도 같이 고칠 것: 자동 명함(assets/common.js), 카드북 충전(cardbook index.html PACKS · worker.js) -->
+<style>
+  :root { --ink: #141414; --muted: #666; --line: #e3e1dc; --paper: #fff; --bg: #f6f5f2; --brand: #1f3a6b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Noto Sans KR', system-ui, sans-serif; line-height: 1.65; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 40px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .lead { color: var(--muted); font-size: 14.5px; margin: 0 0 22px; }
+  .prod { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 18px; display: grid; grid-template-columns: 180px 1fr; gap: 20px; }
+  .prod .img { background: #eef1f6; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; min-height: 200px; }
+  .prod .img img { width: 100%; height: auto; display: block; }
+  .prod h2 { font-size: 18px; margin: 0 0 4px; }
+  .prod .desc { font-size: 14px; color: #333; margin: 0 0 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  td, th { border-top: 1px solid var(--line); padding: 7px 4px; text-align: left; vertical-align: top; }
+  th { width: 34%; color: #444; font-weight: 700; }
+  .price { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .btn { display: inline-block; margin-top: 14px; background: var(--brand); color: #fff; text-decoration: none; font-weight: 700; font-size: 14px; border-radius: 10px; padding: 10px 16px; }
+  .note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  h3 { font-size: 16px; margin: 30px 0 8px; }
+  .box { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 14px; }
+  .box ul { margin: 0; padding-left: 18px; }
+  footer { border-top: 1px solid var(--line); margin-top: 34px; padding-top: 16px; font-size: 12.5px; color: #555; line-height: 1.8; }
+  footer a { color: inherit; }
+  @media (max-width: 560px) { .prod { grid-template-columns: 1fr; } .prod .img { max-width: 240px; margin: 0 auto; width: 100%; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>티엠링크 상품 안내</h1>
+  <p class="lead">티엠링크(T.M Link)가 판매하는 디지털 서비스입니다. 모든 상품은 온라인으로 즉시 제공되는 무형 서비스이며, 배송은 없습니다. 결제는 토스페이먼츠(신용·체크카드, 간편결제)로 이루어집니다.</p>
+
+  <section class="prod" id="autocard">
+    <div class="img"><img src="assets/shop-card.png" alt="자동 명함 예시 화면" loading="lazy"></div>
+    <div>
+      <h2>자동 명함 (디지털 명함)</h2>
+      <p class="desc">이름·연락처·하는 일을 입력하거나 종이 명함 사진을 올리면, 휴대폰에서 바로 열리는 디지털 명함 웹페이지를 만들어 드립니다. 받은 사람은 전화·문자·연락처 저장·카드북 저장을 할 수 있고, 발행 후에도 본인이 내용·사진·디자인을 언제든 수정할 수 있습니다.</p>
+      <table>
+        <tr><th>가격</th><td><span class="price">5,900원</span> (1개 언어)</td></tr>
+        <tr><th>언어 추가</th><td><span class="price">1개 언어당 5,000원</span> · 명함 1장에 최대 4개 언어 (예: 2개 언어 10,900원)</td></tr>
+        <tr><th>서비스 제공 기간</th><td>결제 즉시 발행(제공 개시) · 별도 월 요금 없이 서비스 운영 기간 동안 계속 공개</td></tr>
+        <tr><th>환불 정책</th><td>결제 즉시 발행되는 디지털 콘텐츠로, 결제 전 미리보기와 사전 동의 후 발행되므로 <b>발행 이후 청약철회가 제한</b>됩니다. 단, 오류로 발행되지 않은 경우·중복 결제·서비스 장애 시 <b>전액 환불</b>합니다.</td></tr>
+      </table>
+      <a class="btn" href="./">자동 명함 만들기</a>
+      <p class="note">자세한 내용: <a href="terms.html">자동 명함 이용약관·환불 규정</a></p>
+    </div>
+  </section>
+
+  <section class="prod" id="cardbook">
+    <div class="img">
+      <svg viewBox="0 0 180 200" width="180" height="200" role="img" aria-label="카드북 이미지 명함 인식 충전">
+        <rect x="30" y="34" width="120" height="74" rx="8" fill="#fff" stroke="#c9d3e6"/>
+        <rect x="42" y="48" width="44" height="8" rx="3" fill="#1f3a6b"/>
+        <rect x="42" y="62" width="70" height="6" rx="3" fill="#b8c4da"/>
+        <rect x="42" y="74" width="58" height="6" rx="3" fill="#b8c4da"/>
+        <rect x="42" y="86" width="64" height="6" rx="3" fill="#b8c4da"/>
+        <path d="M90 118 v18 m-8 -8 l8 8 l8 -8" stroke="#2563eb" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="40" y="146" width="100" height="34" rx="10" fill="#1f3a6b"/>
+        <text x="90" y="168" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="sans-serif">명함첩 저장</text>
+      </svg>
+    </div>
+    <div>
+      <h2>카드북 · 이미지 명함 인식 충전</h2>
+      <p class="desc">카드북(명함첩)은 받은 명함을 저장·검색하는 무료 서비스입니다. 카톡·이메일로 받은 이미지 명함 파일(또는 명함 사진)을 AI가 읽어 이름·연락처를 자동으로 등록하는 기능은 1장당 1크레딧을 사용하며, 부족할 때 충전할 수 있습니다. 가입 시 50장, 매월 5장은 무료로 드립니다.</p>
+      <table>
+        <tr><th>100장</th><td><span class="price">3,000원</span></td></tr>
+        <tr><th>300장</th><td><span class="price">7,000원</span></td></tr>
+        <tr><th>1,000장</th><td><span class="price">20,000원</span></td></tr>
+        <tr><th>서비스 제공 기간</th><td>결제 즉시 계정에 지급 · 유료 충전분은 <b>소멸 없이</b> 서비스 운영 기간 동안 사용</td></tr>
+        <tr><th>환불 정책</th><td>충전분을 <b>전혀 사용하지 않았다면 구매일로부터 7일 이내 전액 환불</b>. 일부 사용 시 사용분을 뺀 잔여분만 환불. 무료 지급분은 환불 대상이 아닙니다.</td></tr>
+      </table>
+      <a class="btn" href="https://jinjjabg-hub.github.io/cardbook/">카드북 열기</a>
+      <p class="note">자세한 내용: <a href="https://jinjjabg-hub.github.io/cardbook/terms.html">카드북 이용약관(제6조·제7조)</a></p>
+    </div>
+  </section>
+
+  <h3>구매 · 이용 방법</h3>
+  <div class="box"><ul>
+    <li>상품 정보와 가격은 로그인 없이 이 페이지에서 확인할 수 있습니다.</li>
+    <li>구매한 명함을 나중에 수정하고 충전 크레딧을 내 계정에 보관하기 위해, 결제 전에 Google 계정으로 간편 로그인합니다(별도 회원가입 절차 없음).</li>
+    <li>결제 후 자동 명함은 바로 공개 주소가 발급되고, 카드북 크레딧은 바로 계정에 지급됩니다.</li>
+  </ul></div>
+
+  <h3>환불 · 문의</h3>
+  <div class="box">환불 요청과 문의는 이메일 <a href="mailto:jinjjabg@gmail.com">jinjjabg@gmail.com</a> 또는 전화 010-5334-2544로 받으며, 접수 후 3영업일 이내에 처리 결과를 안내하고 결제한 수단으로 취소해 드립니다.</div>
+
+  <footer>
+    상호: 티엠링크(T.M Link) · 대표자: 송승훈 · 사업자등록번호: 253-63-00948<br>
+    사업장 주소: 부산광역시 사상구 가야대로378번길 1 (주례동, 팍스타운) 1704호<br>
+    전화: 010-5334-2544 · 이메일: jinjjabg@gmail.com · 통신판매업 신고번호: 제2026-부산사상구-0340호<br>
+    <a href="terms.html">자동 명함 이용약관</a> · <a href="https://jinjjabg-hub.github.io/cardbook/terms.html">카드북 이용약관</a> · <a href="https://jinjjabg-hub.github.io/cardbook/privacy.html">개인정보처리방침</a>
+  </footer>
+</div>
+</body>
+</html>

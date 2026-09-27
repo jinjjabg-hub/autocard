@@ -1,0 +1,52 @@
+# 자동 명함(AutoCard) 인수인계 — 2026-09-27
+
+새 대화(세션)는 이 문서부터 읽고 시작한다. 사용자(송승훈 대표, 티엠링크)는 **한국어**, **데이터 근거**, **왜(목적)** 를 중요하게 여기고, 단계별 보고·쉬운 사용법 안내를 선호한다.
+
+## 1. 왜 만드나 (목적)
+- **확산 > 매출.** 싼 자동 명함(5,900원)으로 BNI 멤버들이 명함을 만들고 → 받은 사람이 **카드북(CardBook)에 저장**하게 하는 것이 목표.
+- 판단 기준: **"5분 안에 끝나나"**, **"받은 사람이 카드북에 저장하게 되나"**.
+- 포지셔닝: **명함은 가볍게(핵심만)**. 경력·사례까지 보여주고 싶은 사람은 **커스텀 비즈홈**(프리미엄 퍼스널 브랜딩 작은 홈페이지)으로 안내 → 글자 수 제한이 곧 업셀 지점.
+
+## 2. 레포와 역할
+| 레포 | 역할 |
+|---|---|
+| **jinjjabg-hub/autocard** (이 레포, GitHub Pages) | 제작 앱 `index.html`, 공개 명함 `c/?id=`, 관리자 `admin.html`, 테스트용 `import-test.html`, 약관 `terms.html`, 공통 `assets/` |
+| **jinjjabg-hub/cardbook** | 카드북 앱 + **Cloudflare Worker `cardbook-ai`(worker.js)** + Firebase 규칙(firestore.rules, storage.rules). **main에 push하면 GitHub Actions가 Worker·규칙 자동 배포**(.github/workflows/deploy-backend.yml) |
+| jinjjabg-hub/MANDU | 번역 메신저 (개인정보처리방침에 사업자 정보 반영됨, 베타 무료라 이용약관 없음) |
+| jinjjabg-hub/bni-giants | 자이언츠 챕터 사이트 — **자동 명함과 무관**(예전 임시 복사본 삭제함) |
+
+Firebase 프로젝트 `mandu-e7c3c`(Firestore `autocards`, Storage `autocards/{uid}/{cardId}/`), Worker `https://cardbook-ai.jinjjabg.workers.dev`.
+비밀값(ANTHROPIC_API_KEY, FIREBASE_SA, TOSS_SECRET_KEY, CLOUDFLARE_*, FIREBASE_RULES_SA)은 **Cloudflare/GitHub Secrets에만** 있음 — 채팅·코드에 절대 넣지 말 것.
+
+## 3. 주요 파일
+- `assets/card.js` — 명함 렌더러(7개 템플릿: minimal·split·badge·magazine·dark·block·**pioneer**), 색 대비 보정(`acFixColors`, WCAG 4.5), 명함 버튼 문구 `AC_UI`(언어별), 글꼴 `AC_FONTS`.
+- `assets/card.css` — 템플릿 디자인. `assets/pioneer-bg.jpg` = 파이오니어 챕터 배경(포스터에서 인물 없는 빌딩 부분).
+- `assets/i18n.js` — **화면 문구 사전 `AC_T`(키 → 9개 언어 배열: ko,en,ja,zh,vi,mn,th,es,fr)**, `t()`, 화면 언어 감지, **목록 밖 언어는 Worker `/autocard/ui`가 AI 번역해 KV에 영구 저장**, 가격 표시 `acWon`(외국어는 ₩ + 달러 참고).
+  - 새 문구를 넣을 때는 **9개 언어를 모두** 채울 것.
+- `assets/common.js` — Firebase 설정, 가격(5,900 + 언어당 5,000, 최대 4개 언어), 토스 클라이언트 키(**테스트 키**).
+- `index.html` — 제작 앱(0 시작 → 1 언어 → 2 이름 → 3 연락처 → 4 하는 일 → 5 사진 → 6 디자인 → 7 미리보기·결제). 발행 후 수정·언어 추가 결제 포함.
+
+## 4. 지금까지 결정된 것
+- **입력 언어(src) ≠ 명함 기본 언어(langs[0]).** 입력 언어 = 화면 언어. 문구는 입력 언어로 적고 명함의 다른 언어는 전부 번역. 다른 언어 이름은 AI가 자동 표기(본인이 고치면 유지).
+- **이미지 명함으로 시작**: Worker `/autocard/import`(Claude vision) → 이름·연락처·전문분야·SNS·사진 위치·브랜드 색/템플릿/글꼴. 하루 기기 5회·IP 40회(관리자 무제한). 캐시 `ac-import:v4`.
+- **파이오니어 포스터**면 챕터 스타일 `pioneer` 자동 선택(챕터 칸이 파이오니어일 때만 목록에 보임). 챕터 스타일은 "회사 고유 디자인"처럼 일반화할 계획(스타일 등록·검색).
+- **글자 수 제한**(한글 기준, 영문 2자=1자): 한 줄 소개 35, 하는 일·돕는 분 80, 리퍼럴 60, 전문분야 5개×18자, 이름 20, 직함·회사 25, 챕터 15, 질문 답변 400. 넘치면 커스텀 비즈홈 안내.
+- **결제**: 토스페이먼츠(카드북과 같은 상점, 지금 **테스트 키**). 결제 → Worker `/autocard/pay/confirm`이 **금액을 서버에서 다시 계산**하고 승인 → **즉시 발행**. 관리자 계정은 무료 발행. 발행 후 **언어 추가 결제**(+5,000/개) 지원. 결제 기록 `autocardPayments/{orderId}`(중복 방지).
+- **환불 규정 A**: 결제 즉시 발행되는 디지털 콘텐츠 → **발행 후 청약철회 제한**(결제 전 미리보기 + 사전 고지·동의). 오류·중복 결제·장애는 전액 환불.
+- **발행 후 수정**: 이름 포함 모두 즉시 수정(언어·가격만 잠금). 첫 화면 "내 명함 수정".
+- **통화**: 원화 결제, 외국어 화면에 달러 참고값(환율 1,400 고정값).
+- **사업자 정보**: 티엠링크(T.M Link) · 대표 송승훈 · 개인사업자 · 사업자등록번호 253-63-00948 · 통신판매업 신고 완료(2026-08-03, 부산광역시) · jinjjabg@gmail.com.
+
+## 5. 남은 일 (우선순위)
+1. **통신판매업 신고번호** 받으면 3곳에 기재: autocard `terms.html`(`#mailorder`), cardbook `terms.html`·`privacy.html`, MANDU 개인정보처리방침. (정부24 도메인 변경신고 `https://jinjjabg-hub.github.io/` 제출 중)
+2. **테스트 결제 실사용 확인**(명함 결제 → 바로 열림). 실패 시 Worker의 TOSS_SECRET_KEY가 test_sk인지 확인.
+3. **토스 실제 결제 심사** 통과 후 `AC_TOSS_CLIENT_KEY`(common.js)와 Worker Secret을 live 키로 교체.
+4. **글꼴**: 제목 글꼴 12종 + 본문 글꼴 4종으로 분리(결정됨, 미구현).
+5. **커스텀 비즈홈 노출**: 6단계에 비즈홈 템플릿 미리보기 + 가격·진행 과정 안내 — **가격·과정·상담 방법·예시 주소를 사용자에게 받아야 함**.
+6. 챕터 스타일 일반화(스타일 등록·검색·관리자 승인), 파이오니어 외 챕터 추가.
+7. 공개 명함의 실제 Firebase 흐름 점검(발행 → 명함 열기 → 카드북 저장), 사진 업로드 규칙(`autocards/{uid}/{cardId}/`) 실사용 확인.
+
+## 6. 테스트
+- Worker: `cd cardbook && sh tests/run.sh` (결제·언어 자동 번역·이름 표기 등 6종, 네트워크 없이 모의).
+- 제작 앱: `python3 -m http.server`로 autocard를 띄우고 Playwright(chromium은 `/opt/pw-browsers`)로 확인. 이 환경에선 github.io·workers.dev·gstatic 접속이 막혀 있어 Worker·Firebase·토스는 가짜(route)로 대체해야 함.
+- 개인정보(멤버 포스터 이미지·연락처)는 **공개 레포에 넣지 말 것**.

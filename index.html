@@ -522,7 +522,7 @@ function doneView() {
       <div class="card" style="text-align:left">
         <b style="font-size:14px">${t('cb_h')}</b>
         <p class="hint" style="font-size:13px">${t('cb_p')}</p>
-        <a class="btn ghost wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}" target="_blank">${t('cb_open')}</a>
+        <a class="btn ${live ? 'brand' : 'ghost'} wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}${live ? '?mycard=' + encodeURIComponent(url) : ''}" target="_blank" rel="noopener">${live ? t('cb_open') : t('cb_open_only')}</a>
       </div>
       <button type="button" class="btn ghost wide" id="newBtn" style="margin-top:18px;border:0;color:var(--muted)">${t('new_card')}</button>
     </div>`;

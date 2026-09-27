@@ -129,6 +129,19 @@
   .cnt { font-size: 11.5px; color: var(--muted); text-align: right; margin-top: 4px; font-variant-numeric: tabular-nums; }
   .cnt.over { color: var(--err); font-weight: 800; }
   .lite { font-size: 12.5px; line-height: 1.5; background: #F4F0FA; color: #4B3F72; border-radius: 10px; padding: 9px 12px; margin-top: 6px; }
+  .lite a { color: inherit; font-weight: 800; }
+  .bh { margin-top: 22px; background: #F4F0FA; border: 1px solid #DCD2EE; }
+  .bh-h { display: block; font-size: 15.5px; color: #3A2E63; }
+  .bh p { font-size: 13px; line-height: 1.6; color: #4B3F72; margin: 6px 0 0; }
+  .bh-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 12px; }
+  .bh-plans div { background: #fff; border-radius: 10px; padding: 9px 8px; min-width: 0; }
+  .bh-plans small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; color: #7A6AA8; }
+  .bh-plans b { display: block; font-size: 13.5px; margin: 2px 0; font-variant-numeric: tabular-nums; }
+  .bh-plans span { display: block; font-size: 11px; line-height: 1.4; color: var(--muted); overflow-wrap: anywhere; }
+  .bh .bh-steps { font-size: 12px; margin-top: 10px; }
+  .bh .bh-bni { font-weight: 700; font-size: 12.5px; margin-top: 4px; }
+  .bh-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .bh-btns .btn { flex: 1; text-align: center; text-decoration: none; padding: 11px 8px; font-size: 13.5px; }
   .mine { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   .mine small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
   .mine .btn { padding: 10px 14px; font-size: 13.5px; text-decoration: none; }
@@ -242,7 +255,7 @@ function attachCounters() {
       const over = overLim(key, el.value);
       c.classList.toggle('over', over); c.title = t('len_note');
       // 명함에 나오는 문구가 넘치면 "명함은 가볍게 → 비즈홈" 안내(질문 답변은 AI 재료라 제외)
-      if (key !== 'ans') { let h = c.nextElementSibling; if (!(h && h.classList.contains('lite'))) { h = document.createElement('div'); h.className = 'lite'; h.textContent = t('lite_hint'); c.after(h); } h.hidden = !over; }
+      if (key !== 'ans') { let h = c.nextElementSibling; if (!(h && h.classList.contains('lite'))) { h = document.createElement('div'); h.className = 'lite'; h.innerHTML = `${esc(t('lite_hint'))} <a href="${AC_BIZHOME}#pricing" target="_blank" rel="noopener">${esc(t('bh_go'))} →</a>`; c.after(h); } h.hidden = !over; }
     };
     el.addEventListener('input', upd); el._cnt = upd; upd();
     if (!el.maxLength || el.maxLength < 0) el.maxLength = key === 'spec' ? 600 : LIMITS[key] * 2 + 20;   // 붙여넣기 폭주 방지(영문 기준 최대치 + 여유)
@@ -278,7 +291,7 @@ function render() {
   document.title = t('doc_title'); $('brand').textContent = t('brand');
   $('prevBtn').textContent = t('prev'); $('nextBtn').textContent = t('next');
   $('price').textContent = acWon(acPrice(S.langs), false);
-  $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · ${UI === 'ko' ? '사업자등록번호' : 'Business reg. no.'} 253-63-00948 · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
+  $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · ${UI === 'ko' ? '사업자등록번호' : 'Business reg. no.'} 253-63-00948 · ${UI === 'ko' ? '통신판매업 신고' : 'Mail-order reg. no.'} 2026-부산사상구-0340 · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
   $('bar').style.width = (S.step / 7 * 100) + '%';
   $('stepname').textContent = S.step ? `${S.step} / 7 · ${t('step' + S.step)}` : t('start');
   $('prevBtn').style.visibility = S.step >= (S.editing ? 3 : 1) && (S.status === 'draft' || S.editing) ? 'visible' : 'hidden';   // 수정은 2단계부터(언어는 결제와 연결돼 못 바꿈)
@@ -414,7 +427,8 @@ const VIEWS = {
       ${d.colorMode === 'random' ? `<button type="button" class="btn wide" id="rollBtn">${t('roll')}</button><p class="hint" style="text-align:center">${t('now', { x: t('preset' + d.presetIdx) })}</p>` : ''}
       ${d.colorMode === 'custom' ? ['main', 'sub', 'point'].map(k => `<div class="swrow"><div class="lab">${t('c_' + k)} <small>· ${t('c_' + k + '_sub')}</small></div>
         <div class="sws">${AC_SWATCH[k].map(c => `<button type="button" class="sw ${d[k].toUpperCase() === c ? 'on' : ''}" data-sw="${k}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div></div>`).join('') + warns.map(w => `<div class="warn">⚠️ ${t('warn_' + w)}</div>`).join('') : ''}
-      <div class="phone"><div class="scr"><div id="preview"></div></div></div>`;
+      <div class="phone"><div class="scr"><div id="preview"></div></div></div>
+      ${bizhomeBox()}`;
   },
   7() {
     if (S.status !== 'draft' && !S.editing) return doneView();
@@ -446,6 +460,14 @@ const VIEWS = {
       </div>`}`;
   },
 };
+
+// 커스텀 비즈홈 안내 — 명함(가볍게)으로 부족한 사람을 위한 업셀. 가격은 참고용이고 결제·상담은 T.M-LINK 사이트에서
+function bizhomeBox() {
+  return `<div class="card bh"><b class="bh-h">${t('bh_h')}</b><p>${t('bh_p')}</p>
+    <div class="bh-plans">${AC_BIZHOME_PLANS.map(([n, won, k]) => `<div><small>${n}</small><b>${acWon(won, false)}</b><span>${t(k)}</span></div>`).join('')}</div>
+    <p class="bh-steps">${t('bh_steps')}</p><p class="bh-bni">★ ${t('bh_bni')}</p>
+    <div class="bh-btns"><a class="btn ghost" href="${AC_BIZHOME_EX}" target="_blank" rel="noopener">${t('bh_ex')}</a><a class="btn brand" href="${AC_BIZHOME}#pricing" target="_blank" rel="noopener">${t('bh_go')}</a></div></div>`;
+}
 
 function doneView() {
   const url = acCardUrl(S.cardId);

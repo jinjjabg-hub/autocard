@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>자동 명함 만들기</title>
+<title>디지털 명함 만들기</title>
 <meta name="description" content="5분이면 끝나는 디지털 명함 — 5,900원부터, 카드북 저장까지 한 번에">
 <meta property="og:title" content="5분 디지털 명함 · 5,900원">
 <meta property="og:description" content="질문 3개에 답하면 AI가 소개 문구를 써드려요. 받은 사람은 카드북에 바로 저장!">
@@ -179,7 +179,7 @@
 <body>
 <div class="app">
   <header class="top">
-    <div class="toprow"><div class="brand" id="brand">자동 명함</div><div class="row"><select id="uiLang" class="uisel" aria-label="Language"></select><div class="price" id="price">5,900원</div></div></div>
+    <div class="toprow"><div class="brand" id="brand">디지털 명함</div><div class="row"><select id="uiLang" class="uisel" aria-label="Language"></select><div class="price" id="price">5,900원</div></div></div>
     <div class="bar"><i id="bar"></i></div>
     <div class="stepname" id="stepname"></div>
   </header>
@@ -262,7 +262,7 @@ const COPY_FIELDS = [   // [키, 이름표 번역키, 설명 번역키, 칸 높�
   ['help', 'f_help', 'f_help_sub', 96],
   ['referral', 'f_ref', 'f_ref_sub', 84],
 ];
-// 글자 수 제한 — 명함은 가볍게(핵심만). 길게 쓰고 싶은 사람은 커스텀 비즈홈(작은 퍼스널 브랜딩 홈페이지)으로 안내.
+// 글자 수 제한 — 명함은 가볍게(핵심만). 길게 쓰고 싶은 사람은 비즈홈(작은 퍼스널 브랜딩 홈페이지)으로 안내.
 // 질문 답변(ans)은 명함에 나오지 않고 AI 초안 재료로만 쓰여서 넉넉하게. AI 초안 길이(Worker)도 같은 기준.
 // 한글·한자·가나는 1자, 영문·숫자는 2개를 1자로 셈(같은 칸에서 차지하는 폭이 비슷하도록)
 const LIMITS = { name: 20, title: 25, company: 25, chapter: 15, slogan: 35, work: 80, help: 80, referral: 60, spec: 18, specN: 5, ans: 400 };
@@ -501,7 +501,7 @@ const VIEWS = {
   },
 };
 
-// 커스텀 비즈홈 안내 — 명함(가볍게)으로 부족한 사람을 위한 업셀. 가격은 참고용이고 결제·상담은 T.M-LINK 사이트에서
+// 비즈홈 안내 — 명함(가볍게)으로 부족한 사람을 위한 업셀. 가격은 참고용이고 결제·상담은 T.M-LINK 사이트에서
 function bizhomeBox() {
   return `<div class="card bh"><b class="bh-h">${t('bh_h')}</b><p>${t('bh_p')}</p>
     <div class="bh-plans">${AC_BIZHOME_PLANS.map(([n, won, k]) => `<div><small>${n}</small><b>${acWon(won, false)}</b><span>${t(k)}</span></div>`).join('')}</div>
@@ -524,6 +524,7 @@ function doneView() {
         <p class="hint" style="font-size:13px">${t('cb_p')}</p>
         <a class="btn ${live ? 'brand' : 'ghost'} wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}${live ? '?mycard=' + encodeURIComponent(url) : ''}" target="_blank" rel="noopener">${live ? t('cb_open') : t('cb_open_only')}</a>
       </div>
+      ${live ? bizhomeBox() : ''}
       <button type="button" class="btn ghost wide" id="newBtn" style="margin-top:18px;border:0;color:var(--muted)">${t('new_card')}</button>
     </div>`;
 }

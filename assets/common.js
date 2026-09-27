@@ -11,7 +11,7 @@ const AC_FIREBASE = {
 };
 const AC_WORKER = 'https://cardbook-ai.jinjjabg.workers.dev';
 const AC_CARDBOOK = 'https://jinjjabg-hub.github.io/cardbook/';
-// 커스텀 비즈홈(T.M LINK) — 명함보다 자세히 보여주고 싶은 사람에게 6단계에서 안내. 가격은 T.M-LINK 사이트와 같게 유지
+// 비즈홈(T.M LINK) — 명함보다 자세히 보여주고 싶은 사람에게 6단계에서 안내. 가격은 T.M-LINK 사이트와 같게 유지
 const AC_BIZHOME = 'https://jinjjabg-hub.github.io/T.M-LINK/';
 const AC_BIZHOME_EX = 'https://jinjjabg-hub.github.io/DiCA-gallery/';
 const AC_BIZHOME_PLANS = [['BASIC', 150000, 'bh_basic'], ['STANDARD', 210000, 'bh_std'], ['PREMIUM', 270000, 'bh_prem']];

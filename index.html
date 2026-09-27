@@ -278,7 +278,7 @@ function render() {
   document.title = t('doc_title'); $('brand').textContent = t('brand');
   $('prevBtn').textContent = t('prev'); $('nextBtn').textContent = t('next');
   $('price').textContent = acWon(acPrice(S.langs), false);
-  $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
+  $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · ${UI === 'ko' ? '사업자등록번호' : 'Business reg. no.'} 253-63-00948 · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
   $('bar').style.width = (S.step / 7 * 100) + '%';
   $('stepname').textContent = S.step ? `${S.step} / 7 · ${t('step' + S.step)}` : t('start');
   $('prevBtn').style.visibility = S.step >= (S.editing ? 3 : 1) && (S.status === 'draft' || S.editing) ? 'visible' : 'hidden';   // 수정은 2단계부터(언어는 결제와 연결돼 못 바꿈)

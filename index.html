@@ -86,6 +86,11 @@
   .tpl .thumb > div { width: 360px; transform: scale(.3); transform-origin: top left; position: absolute; top: 0; left: 0; }
   .tpl .thumb .ac-save { animation: none; }
   .tpl .thumb .ac-dock { display: none; }
+  .tpl.locked { cursor: not-allowed; opacity: .55; }
+  .tpl.locked .thumb { filter: grayscale(.5); }
+  .lockb { display: inline-block; font-size: 10px; font-weight: 800; background: #ebe9e4; color: var(--muted); border-radius: 999px; padding: 2px 7px; margin-left: 6px; vertical-align: 1px; }
+  .lockrow { opacity: .55; }
+  .lockrow input, .lockrow button { cursor: not-allowed; }
   .fonts { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
   .fontbtn { border: 1.5px solid var(--line); background: var(--paper); border-radius: 12px; padding: 10px 8px; cursor: pointer; text-align: center; }
   .fontbtn.on { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
@@ -338,7 +343,7 @@ function render() {
   $('prevBtn').textContent = t('prev'); $('nextBtn').textContent = t('next');
   $('price').textContent = S.plan === 'free' ? t('free_badge') : acWon(acPrice(S.langs), false);
   $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · ${UI === 'ko' ? '사업자등록번호' : 'Business reg. no.'} 253-63-00948 · ${UI === 'ko' ? '통신판매업 신고' : 'Mail-order reg. no.'} 2026-부산사상구-0340 · ${UI === 'ko' ? '부산광역시 사상구 가야대로378번길 1 (주례동, 팍스타운) 1704호 · 전화' : '1704, 1 Gaya-daero 378beon-gil, Sasang-gu, Busan · Tel'} 010-5334-2544 · <a href="shop.html" target="_blank" rel="noopener" style="color:inherit">${UI === 'ko' ? '상품 안내' : 'Products & prices'}</a> · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
-  const FREE_STEPS = [2, 3, 7];
+  const FREE_STEPS = [2, 3, 6, 7];
   const sp = S.plan === 'free' ? { n: FREE_STEPS.indexOf(S.step) + 1, total: FREE_STEPS.length } : { n: S.step, total: 7 };
   $('bar').style.width = (Math.max(sp.n, 0) / sp.total * 100) + '%';
   $('stepname').textContent = S.step ? `${sp.n} / ${sp.total} · ${t('step' + S.step)}` : t('start');
@@ -494,6 +499,31 @@ const VIEWS = {
   },
   6() {
     const d = S.design, warns = d.colorMode === 'custom' ? acColorWarnings(d) : [];
+    if (S.plan === 'free') {
+      return `<h2>${t('free_lock_h')}</h2>
+        <p class="lead">${t('free_lock_p')}</p>
+        <div class="tpls">${Object.entries(AC_TEMPLATES).filter(([k]) => !CHAPTER_TPL[k]).map(([k, n]) => {
+          const free = FREE_TEMPLATES.includes(k);
+          return `<button type="button" class="tpl ${free ? (d.tpl === k ? 'on' : '') : 'locked'}" ${free ? `data-tpl="${k}"` : 'disabled'}><div class="thumb"><div data-thumb="${k}"></div></div><span>${t('tpl_' + k)}${free ? '' : ` <span class="lockb">${t('locked_badge')}</span>`}</span></button>`;
+        }).join('')}</div>
+        <p class="hint">${t('free_lock_tpl_sub')}</p>
+        <label class="f" style="margin-top:22px">${t('p_profile')} <span class="lockb">${t('locked_badge')}</span></label>
+        <div class="up lockrow"><div class="upimg round">👤</div><div><button type="button" class="btn ghost" disabled>${t('pick_photo')}</button></div></div>
+        <label class="f" style="margin-top:22px">${t('extra_lang')} <span class="lockb">${t('locked_badge')}</span></label>
+        <div class="chips lockrow">${Object.entries(AC_LANGS).filter(([k]) => k !== base()).map(([k, n]) => `<button type="button" class="chip" disabled>${n}</button>`).join('')}</div>
+        <label class="f" style="margin-top:22px">${t('color_l')}</label>
+        <div class="seg">${[['preset', t('cm_preset')], ['random', t('cm_random')], ['custom', t('cm_custom')]].map(([k, n]) => `<button type="button" class="${d.colorMode === k ? 'on' : ''}" data-cm="${k}">${n}</button>`).join('')}</div>
+        ${d.colorMode === 'preset' ? `<div class="presets">${AC_PRESETS.map((p, i) => `<button type="button" class="preset ${d.presetIdx === i ? 'on' : ''}" data-preset="${i}"><span class="dots"><i style="background:${p[1]}"></i><i style="background:${p[2]}"></i><i style="background:${p[3]}"></i></span>${t('preset' + i)}</button>`).join('')}</div>` : ''}
+        ${d.colorMode === 'random' ? `<button type="button" class="btn wide" id="rollBtn">${t('roll')}</button><p class="hint" style="text-align:center">${t('now', { x: t('preset' + d.presetIdx) })}</p>` : ''}
+        ${d.colorMode === 'custom' ? ['main', 'sub', 'point'].map(k => `<div class="swrow"><div class="lab">${t('c_' + k)} <small>· ${t('c_' + k + '_sub')}</small></div>
+          <div class="sws">${AC_SWATCH[k].map(c => `<button type="button" class="sw ${d[k].toUpperCase() === c ? 'on' : ''}" data-sw="${k}" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div></div>`).join('') + warns.map(w => `<div class="warn">⚠️ ${t('warn_' + w)}</div>`).join('') : ''}
+        <div class="phone"><div class="scr"><div id="preview"></div></div></div>
+        <div class="card" style="text-align:left">
+          <b style="font-size:14px">${t('free_up_h')}</b>
+          <p class="hint" style="font-size:13px">${t('free_up_p', { price: acWon(AC_BASE_PRICE, false) })}</p>
+          <button type="button" class="btn brand wide" id="freeUpgradeBtn2" style="margin-top:6px">${t('free_up_btn')}</button>
+        </div>`;
+    }
     return `<h2>${t('design_h')}</h2>
       <p class="lead">${t('design_p')}</p>
       <div class="tpls">${Object.entries(AC_TEMPLATES).filter(([k]) => !CHAPTER_TPL[k] || d.tpl === k || CHAPTER_TPL[k].test(S.chapter || '')).map(([k, n]) => `<button type="button" class="tpl ${d.tpl === k ? 'on' : ''}" data-tpl="${k}"><div class="thumb"><div data-thumb="${k}"></div></div><span>${t('tpl_' + k)}</span></button>`).join('')}</div>
@@ -687,6 +717,7 @@ const AFTER = {
     document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => { setPreset(+b.dataset.preset); save(); render(); });
     const r = $('rollBtn'); if (r) r.onclick = () => { roll(); save(); render(); };
     document.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => { d[b.dataset.sw] = b.dataset.c; save(); render(); });
+    if ($('freeUpgradeBtn2')) $('freeUpgradeBtn2').onclick = () => { S = blankState(); IMP.stage = null; save(); render(); };
   },
   7() {
     if (S.status !== 'draft' && !S.editing) {
@@ -720,6 +751,7 @@ const AFTER = {
 const FONT_FAMILY = { modern: "'Pretendard Variable',Pretendard,sans-serif", classic: "'Noto Serif KR',serif", elegant: "'Gowun Batang',serif", soft: "'Gowun Dodum',sans-serif", bold: "'Black Han Sans',sans-serif" };
 // 챕터 전용 스타일: 그 챕터 멤버(챕터 칸이 맞을 때)에게만 보이고, 이미지로 시작하면 자동 선택
 const CHAPTER_TPL = { pioneer: /pioneer|파이오니어/i };
+const FREE_TEMPLATES = ['minimal', 'block'];   // 완전 무료판에서 고를 수 있는 템플릿(나머지는 잠김 — 유료에서 열림)
 const PIONEER_COLORS = { main: '#0065A7', sub: '#FFFFFF', point: '#C8102E' };   // 포스터 곡선 파랑 + 흰 면 + BNI 빨강
 const curFont = () => AC_FONTS[S.design.font] ? S.design.font : AC_TPL_FONT[S.design.tpl];
 function setPreset(i) { const p = AC_PRESETS[i]; Object.assign(S.design, { presetIdx: i, main: p[1], sub: p[2], point: p[3] }); }
@@ -766,8 +798,8 @@ const CHECK = {
     return lenOk([['ans', S.answers.work, 'q1'], ['ans', S.answers.customer, 'q2'], ['ans', S.answers.referral, 'q3'], ...COPY_FIELDS.map(([k, label]) => [k, c[k], label])]);
   },
 };
-// 무료판은 0(시작)→2(이름)→3(연락처·한줄소개)→7(미리보기·발행)만 거치고 사진·하는 일·디자인(4·5·6단계)은 건너뜀
-const FREE_ORDER = [0, 2, 3, 7];
+// 무료판은 0(시작)→2(이름)→3(연락처·한줄소개)→6(템플릿·색상 고르기, 사진·다국어는 잠금 미리보기)→7(미리보기·발행)만 거치고 4·5단계는 건너뜀
+const FREE_ORDER = [0, 2, 3, 6, 7];
 $('nextBtn').onclick = () => {
   if (CHECK[S.step] && !CHECK[S.step]()) return;
   if (S.plan === 'free') { const i = FREE_ORDER.indexOf(S.step); S.step = i >= 0 && i < FREE_ORDER.length - 1 ? FREE_ORDER[i + 1] : 7; }

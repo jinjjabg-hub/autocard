@@ -627,10 +627,10 @@ const AFTER = {
     if ($('adminLogin')) $('adminLogin').onclick = adminLogin;
     $('startManual').onclick = () => { S.mode = 'manual'; S.step = 1; IMP.stage = null; save(); render(); };
     $('startFree').onclick = () => {
+      // 완전히 새 카드로 시작 — 하다 만 초안(이미지 가져오기·처음부터 입력)의 "하는 일" 등 문구가 섞여 들어가지 않게 blankState부터
+      S = blankState();
       S.mode = 'manual'; S.plan = 'free'; S.langs = [UI]; S.src = UI;
-      S.images = { profile: '', second: '', secondType: 'hero' }; S.chapter = ''; S.phone2 = ''; S.links = [];   // 무료판: 사진·챕터스타일·SNS 없음
       Object.assign(S.design, { tpl: 'minimal', colorMode: 'preset', presetIdx: 0, main: AC_PRESETS[0][1], sub: AC_PRESETS[0][2], point: AC_PRESETS[0][3] });
-      delete S.design.font;
       S.step = 2; IMP.stage = null; save(); render();
     };
     $('startMine').onclick = openMine;

@@ -572,6 +572,11 @@ function doneView() {
         <p class="hint" style="font-size:13px">${t('cb_p')}</p>
         <a class="btn ${live ? 'brand' : 'ghost'} wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}${live ? '?mycard=' + encodeURIComponent(url) : ''}" target="_blank" rel="noopener">${live ? t('cb_open') : t('cb_open_only')}</a>
       </div>
+      ${live && S.plan === 'free' ? `<div class="card" style="text-align:left">
+        <b style="font-size:14px">${t('free_up_h')}</b>
+        <p class="hint" style="font-size:13px">${t('free_up_p', { price: acWon(AC_BASE_PRICE, false) })}</p>
+        <button type="button" class="btn brand wide" id="freeUpgradeBtn" style="margin-top:6px">${t('free_up_btn')}</button>
+      </div>` : ''}
       ${live ? bizhomeBox() : ''}
       <button type="button" class="btn ghost wide" id="newBtn" style="margin-top:18px;border:0;color:var(--muted)">${t('new_card')}</button>
     </div>`;
@@ -688,6 +693,7 @@ const AFTER = {
       $('editThis').onclick = () => editCard(S.cardId);
       $('copyBtn').onclick = async () => { try { await navigator.clipboard.writeText($('myUrl').value); toast(t('copied')); } catch (e) { $('myUrl').select(); } };
       $('newBtn').onclick = () => { if (confirm(t('new_confirm'))) { S = blankState(); IMP.stage = null; save(); render(); } };
+      if ($('freeUpgradeBtn')) $('freeUpgradeBtn').onclick = () => { S = blankState(); IMP.stage = null; save(); render(); };   // 무료 명함은 그대로 두고 유료 명함을 새로 시작(시작 화면으로)
       refreshStatus();
       return;
     }

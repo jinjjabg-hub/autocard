@@ -249,6 +249,14 @@ try { const e = localStorage.getItem(EDIT_KEY); if (e) S = Object.assign(blankSt
 const qs = new URLSearchParams(location.search);
 if (!S.ref && qs.get('ref')) S.ref = qs.get('ref').slice(0, 40);   // 어떤 명함을 보고 왔는지 → 확산 측정용
 
+// 완전 무료로 시작 — 히어로·startcard·하단 버튼이 모두 이걸 부른다. 완전히 새 카드에서 시작(하다 만 초안의 "하는 일" 등이 섞여 들어가지 않게)
+function beginFree() {
+  S = blankState();
+  S.mode = 'manual'; S.plan = 'free'; S.langs = [UI]; S.src = UI;
+  Object.assign(S.design, { tpl: 'minimal', colorMode: 'preset', presetIdx: 0, main: AC_PRESETS[0][1], sub: AC_PRESETS[0][2], point: AC_PRESETS[0][3] });
+  S.step = 2; IMP.stage = null; save(); render();
+}
+
 // 이미지 명함 가져오기 진행 상태 — 원본 이미지는 이 변수(메모리)에만 있고 저장하지 않는다
 const IMP = { stage: null, img: '', w: 0, h: 0, result: null, crop: null, error: '' };
 const splitLines = v => String(v || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 8);
@@ -364,23 +372,23 @@ const VIEWS = {
       ${IMP.stage === 'error' ? '' : `<section class="hero">
         <div class="hero-txt"><small>${t('hero_kick')}</small><h1>${t('hero_h').split('|').map(esc).join('<br>')}</h1>
           <p>${t('hero_p', { price: acWon(AC_BASE_PRICE) })}</p>
-          <button type="button" class="btn hero-go" data-go="start">${t('hero_go')} →</button></div>
+          <button type="button" class="btn hero-go" id="heroFreeGo">${t('hero_go')} →</button></div>
         <div class="hero-card" aria-hidden="true"><div id="heroCard"></div></div>
       </section>`}
       <h2 id="startSec">${t('start_h')}</h2>
       <p class="lead">${t('start_p', { price: acWon(AC_BASE_PRICE) })}</p>
       ${IMP.stage === 'error' ? `<div class="err">${esc(IMP.error)}</div>${IMP.limited ? `<button type="button" class="btn ghost" id="adminLogin" style="margin-top:8px">${t('admin_retry')}</button>` : ''}` : ''}
-      <button type="button" class="startcard rec" id="startImport"><b>${t('imp_title')} <em>${t('imp_badge')}</em></b>
+      <button type="button" class="startcard rec" id="startFree"><b>${t('free_title')} <em>${t('free_badge')}</em></b><span>${t('free_desc')}</span></button>
+      <button type="button" class="startcard" id="startImport"><b>${t('imp_title')} <em style="background:#6b6b6b">${t('imp_badge')}</em></b>
         <span>${t('imp_desc')}</span></button>
       <button type="button" class="startcard" id="startManual"><b>${t('man_title')}</b><span>${t('man_desc')}</span></button>
-      <button type="button" class="startcard" id="startFree"><b>${t('free_title')} <em style="background:var(--ok)">${t('free_badge')}</em></b><span>${t('free_desc')}</span></button>
       <button type="button" class="startcard" id="startMine" style="background:transparent"><b>${t('mine_title')}</b><span>${t('mine_desc')}</span></button>
       <h3 class="sec">${t('why_h')}</h3>
       <div class="why">${[1, 2, 3, 4].map(i => `<div><svg viewBox="0 0 24 24" aria-hidden="true">${whyIco[i - 1]}</svg><b>${t('why' + i + '_t')}</b><p>${t('why' + i + '_p')}</p></div>`).join('')}</div>
       <h3 class="sec">${t('vs_h')}</h3>
       <div class="vswrap"><table class="vs"><thead><tr><th></th><th>${t('vs_free')}</th><th class="ours">${t('vs_ours')}</th></tr></thead><tbody>${vsRows}</tbody></table></div>
       <p class="hint">${t('vs_note')}</p>
-      <div class="endcta"><b>${t('end_h')}</b><button type="button" class="btn brand wide" data-go="start">${t('hero_go')} · ${acWon(AC_BASE_PRICE, false)}</button></div>`;
+      <div class="endcta"><b>${t('end_h')}</b><button type="button" class="btn brand wide" id="endFreeGo">${t('hero_go')}</button></div>`;
   },
   1() {
     const extras = S.langs.slice(1);
@@ -629,13 +637,9 @@ const AFTER = {
     $('startImport').onclick = () => { $('importInput').value = ''; $('importInput').click(); };
     if ($('adminLogin')) $('adminLogin').onclick = adminLogin;
     $('startManual').onclick = () => { S.mode = 'manual'; S.step = 1; IMP.stage = null; save(); render(); };
-    $('startFree').onclick = () => {
-      // 완전히 새 카드로 시작 — 하다 만 초안(이미지 가져오기·처음부터 입력)의 "하는 일" 등 문구가 섞여 들어가지 않게 blankState부터
-      S = blankState();
-      S.mode = 'manual'; S.plan = 'free'; S.langs = [UI]; S.src = UI;
-      Object.assign(S.design, { tpl: 'minimal', colorMode: 'preset', presetIdx: 0, main: AC_PRESETS[0][1], sub: AC_PRESETS[0][2], point: AC_PRESETS[0][3] });
-      S.step = 2; IMP.stage = null; save(); render();
-    };
+    $('startFree').onclick = beginFree;
+    if ($('heroFreeGo')) $('heroFreeGo').onclick = beginFree;
+    if ($('endFreeGo')) $('endFreeGo').onclick = beginFree;
     $('startMine').onclick = openMine;
     document.querySelectorAll('[data-go="start"]').forEach(b => b.onclick = () => $('startSec').scrollIntoView({ behavior: 'smooth', block: 'start' }));
     // 첫 화면 예시 명함 — 가상 인물, 화면 언어로

@@ -421,6 +421,8 @@ const VIEWS = {
         <p class="hint">${t('need_one')}</p>
         <label class="f">${t('f_slogan')} <small>· ${t('f_slogan_sub')}</small></label>
         <textarea class="t" id="slogan" data-lim="slogan" style="min-height:64px" placeholder="${t('copy_ph')}">${esc(c.slogan)}</textarea>
+        <label class="f">${t('links_l')} <small>· ${t('optional')}</small></label>
+        <input class="t" id="freeLink" value="${esc((S.links[0] || {}).url || '')}" placeholder="${t('link_url_ph')}" inputmode="url">
         <div class="err" id="err"></div>`;
     }
     return `<h2>${t('contact_h')}</h2>
@@ -600,6 +602,7 @@ const AFTER = {
       $('phone').onblur = e => { S.phone = fmtPhone(e.target.value); e.target.value = S.phone; save(); };
       $('email').oninput = e => { S.email = e.target.value.trim(); save(); };
       $('slogan').oninput = e => { copyOf(W()).slogan = e.target.value; save(); };
+      $('freeLink').oninput = e => { const u = e.target.value.trim(); S.links = u ? [{ label: '', url: u }] : []; save(); };
       return;
     }
     $('company').oninput = e => { S.company[W()] = e.target.value; unauto('company'); save(); };

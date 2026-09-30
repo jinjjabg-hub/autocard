@@ -57,11 +57,12 @@ function acLoadFont(key) {   // 고른 글꼴만 그때그때 불러옴(페이�
   });
 }
 // 템플릿별 기본 글꼴(사용자가 고르지 않았을 때)
-const AC_TPL_FONT = { minimal: 'modern', split: 'modern', badge: 'soft', magazine: 'classic', dark: 'modern', block: 'bold', pioneer: 'modern' };
+const AC_TPL_FONT = { minimal: 'modern', split: 'modern', badge: 'soft', magazine: 'classic', dark: 'modern', block: 'bold', pioneer: 'modern', landscape: 'modern', ribbon: 'soft', polaroid: 'elegant' };
 
 const AC_TEMPLATES = {
   minimal: '미니멀 센터형', split: '대각선 스플릿형', badge: '플로팅 배지형',
   magazine: '매거진 에디토리얼형', dark: '다크 프리미엄형', block: '컬러 블록형', pioneer: '파이오니어 챕터',
+  landscape: '가로형 카드(종이명함)', ribbon: '리본 포인트형', polaroid: '폴라로이드형',
 };
 
 function acHexRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
@@ -297,6 +298,29 @@ const AC_TPL = {
   block(v) {
     return `${v.large ? `<div class="ac-bigwrap">${acBig(v)}</div>` : ''}<header class="ac-hero">${acHeroBg(v)}${acLogo(v)}${acIdentity(v, { avatar: !v.large })}</header>
       ${v.slogan ? `<div class="ac-band"><p>${acEsc(v.slogan)}</p></div>` : ''}${acBody(v, { noSlogan: true })}`;
+  },
+  // 8. 가로형 카드(종이명함) — 실제 명함 비율(약 1.6:1)의 카드 면을 먼저 보여주고, 그 아래 연락 섹션은 다른 템플릿과 동일
+  //    사진은 넣지 않는 레이아웃(종이 명함 앞면처럼 이름·직함·연락처만) — 완전 무료판의 기본 템플릿 중 하나
+  landscape(v) {
+    return `<div class="ac-lsc-wrap"><div class="ac-lsc">
+        <div class="ac-lsc-top">${acChapter(v)}${acLogo(v)}</div>
+        <div class="ac-lsc-id"><h1>${acEsc(v.name)}</h1>${v.name2 ? `<div class="ac-name2">${acEsc(v.name2)}</div>` : ''}
+          <div class="ac-role">${acRole(v)}</div>${v.slogan ? `<p class="ac-lsc-slogan">${acEsc(v.slogan)}</p>` : ''}</div>
+        <div class="ac-lsc-contact">${[v.phone, v.email].filter(Boolean).map(x => `<span>${acEsc(x)}</span>`).join('<i></i>')}</div>
+      </div></div>${acBody(v, { noSlogan: true })}`;
+  },
+  // 9. 리본 포인트형 — 왼쪽에 세로 색 리본, 사진은 리본 위에 얹힌 원형
+  ribbon(v) {
+    return `<header class="ac-hero">${acHeroBg(v)}<div class="ac-ribbon"></div>${acLogo(v)}
+        <div class="ac-ribbon-photo">${acAvatar(v, 'ac-photo')}</div>
+      </header>${acIdentity(v, { slogan: true })}${acBody(v, { noSlogan: true })}`;
+  },
+  // 10. 폴라로이드형 — 살짝 기울어진 폴라로이드 사진 카드, 그 아래 손글씨 느낌 캡션
+  polaroid(v) {
+    return `<header class="ac-hero ac-polaroid-hero">${acHeroBg(v)}${acLogo(v)}
+        <div class="ac-polaroid"><div class="ac-polaroid-photo">${v.profile ? `<img src="${acEsc(v.profile)}" alt="">` : `<div class="ac-initial">${acEsc((v.name || '?').trim().charAt(0))}</div>`}</div>
+          <div class="ac-polaroid-cap">${acEsc(v.name)}</div></div>
+      </header>${acIdentity(v, { slogan: true })}${acBody(v, { noSlogan: true })}`;
   },
 };
 

@@ -701,7 +701,12 @@ const AFTER = {
   6() {
     const d = S.design;
     // 템플릿 썸네일도 실제 렌더러로 그림 → 고른 모습 = 발행되는 모습
-    document.querySelectorAll('[data-thumb]').forEach(el => acRender(el, { ...cardData(), design: { ...d, tpl: el.dataset.thumb } }, S.langs.includes(W()) ? W() : base()));
+    document.querySelectorAll('[data-thumb]').forEach(el => {
+      const k = el.dataset.thumb, locked = S.plan === 'free' && !FREE_TEMPLATES.includes(k);
+      const cd = cardData();
+      if (locked) cd.images = { ...cd.images, profile: AC_DEMO_AVATAR };   // 잠긴 템플릿엔 예시 사진을 넣어 "사진도 된다"는 걸 보여줌
+      acRender(el, { ...cd, design: { ...d, tpl: k, photo: locked ? 'large' : d.photo } }, S.langs.includes(W()) ? W() : base());
+    });
     drawPreview();
     document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => { d.tpl = b.dataset.tpl; save(); render(); });
     document.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => { d.photo = b.dataset.ph; save(); render(); });
@@ -751,7 +756,11 @@ const AFTER = {
 const FONT_FAMILY = { modern: "'Pretendard Variable',Pretendard,sans-serif", classic: "'Noto Serif KR',serif", elegant: "'Gowun Batang',serif", soft: "'Gowun Dodum',sans-serif", bold: "'Black Han Sans',sans-serif" };
 // 챕터 전용 스타일: 그 챕터 멤버(챕터 칸이 맞을 때)에게만 보이고, 이미지로 시작하면 자동 선택
 const CHAPTER_TPL = { pioneer: /pioneer|파이오니어/i };
-const FREE_TEMPLATES = ['minimal', 'block'];   // 완전 무료판에서 고를 수 있는 템플릿(나머지는 잠김 — 유료에서 열림)
+const FREE_TEMPLATES = ['minimal', 'landscape'];   // 완전 무료판에서 고를 수 있는 템플릿(세로형·가로형 1개씩) — 나머지는 잠김, 유료에서 열림
+// 잠긴 템플릿 썸네일에 "사진도 된다"는 걸 보여줄 예시 사진 — 실제 인물이 아닌 일러스트 실루엣(개인정보 아님)
+const AC_DEMO_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#cbd5df"/><circle cx="50" cy="38" r="20" fill="#8f9fae"/><path d="M50 60c-25 0-36 14-36 32v8h72v-8c0-18-11-32-36-32z" fill="#8f9fae"/></svg>'
+);
 const PIONEER_COLORS = { main: '#0065A7', sub: '#FFFFFF', point: '#C8102E' };   // 포스터 곡선 파랑 + 흰 면 + BNI 빨강
 const curFont = () => AC_FONTS[S.design.font] ? S.design.font : AC_TPL_FONT[S.design.tpl];
 function setPreset(i) { const p = AC_PRESETS[i]; Object.assign(S.design, { presetIdx: i, main: p[1], sub: p[2], point: p[3] }); }

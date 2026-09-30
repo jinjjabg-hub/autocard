@@ -224,7 +224,7 @@ const NAME_PH = { ko: '홍길동', en: 'Gildong Hong', ja: '山田 太郎', zh: 
 function blankState() {
   return {
     step: 0, cardId: null, status: 'draft', createdAt: 0, ref: '',
-    mode: '', auto: {},   // mode: 'import'(이미지 명함으로 시작) | 'manual'. auto: 이미지에서 자동으로 채운 칸(확인 전)
+    mode: '', plan: '', auto: {},   // mode: 'import'(이미지 명함으로 시작) | 'manual'. plan: 'free'(완전 무료, 사진·다국어 없음) | ''(유료). auto: 이미지에서 자동으로 채운 칸(확인 전)
     langs: [UI],   // 명함 언어 목록. 첫 번째 = 기본 언어(명함을 열면 처음 보이는 언어)
     src: UI,       // 입력 언어(직접 적는 언어) = 화면 언어. 문구는 여기에 적고 명함의 다른 언어로 번역. 명함 언어에 없어도 됨
     name: {}, title: {}, company: {}, nameAuto: {},   // nameAuto: 번역 때 자동으로 넣은 다른 언어 이름(본인이 고치면 덮어쓰지 않음)
@@ -311,7 +311,8 @@ function cardData() {   // 렌더러·Firestore에 넘기는 명함 데이터 (�
     chapter: S.chapter || '', showChapter: S.showChapter !== false,
     answers: S.answers, copy: onlyLangs(S.copy), images: S.images,
     design: { tpl: S.design.tpl, colorMode: S.design.colorMode, main: S.design.main, sub: S.design.sub, point: S.design.point, photo: S.design.photo || 'small', ...(AC_FONTS[S.design.font] ? { font: S.design.font } : {}) },
-    price: acPrice(S.langs),
+    price: S.plan === 'free' ? 0 : acPrice(S.langs),
+    plan: S.plan === 'free' ? 'free' : 'paid',
     src: W(),   // 입력 언어 — 명함 화면이 다른 언어 칸을 이 언어의 답변으로 메우지 않게
   };
 }
@@ -327,10 +328,12 @@ if (/KAKAOTALK/i.test(UA) && /Android/i.test(UA)) location.href = 'intent://' + 
 function render() {
   document.title = t('doc_title'); $('brand').textContent = t('brand');
   $('prevBtn').textContent = t('prev'); $('nextBtn').textContent = t('next');
-  $('price').textContent = acWon(acPrice(S.langs), false);
+  $('price').textContent = S.plan === 'free' ? t('free_badge') : acWon(acPrice(S.langs), false);
   $('bizfoot').innerHTML = `${esc(t('biz_footer'))} · ${UI === 'ko' ? '사업자등록번호' : 'Business reg. no.'} 253-63-00948 · ${UI === 'ko' ? '통신판매업 신고' : 'Mail-order reg. no.'} 2026-부산사상구-0340 · ${UI === 'ko' ? '부산광역시 사상구 가야대로378번길 1 (주례동, 팍스타운) 1704호 · 전화' : '1704, 1 Gaya-daero 378beon-gil, Sasang-gu, Busan · Tel'} 010-5334-2544 · <a href="shop.html" target="_blank" rel="noopener" style="color:inherit">${UI === 'ko' ? '상품 안내' : 'Products & prices'}</a> · <a href="terms.html" target="_blank" rel="noopener" style="color:inherit">${t('terms_link')}</a>`;
-  $('bar').style.width = (S.step / 7 * 100) + '%';
-  $('stepname').textContent = S.step ? `${S.step} / 7 · ${t('step' + S.step)}` : t('start');
+  const FREE_STEPS = [2, 3, 7];
+  const sp = S.plan === 'free' ? { n: FREE_STEPS.indexOf(S.step) + 1, total: FREE_STEPS.length } : { n: S.step, total: 7 };
+  $('bar').style.width = (Math.max(sp.n, 0) / sp.total * 100) + '%';
+  $('stepname').textContent = S.step ? `${sp.n} / ${sp.total} · ${t('step' + S.step)}` : t('start');
   $('prevBtn').style.visibility = S.step >= (S.editing ? 3 : 1) && (S.status === 'draft' || S.editing) ? 'visible' : 'hidden';   // 수정은 2단계부터(언어는 결제와 연결돼 못 바꿈)
   $('nextBtn').style.display = S.step >= 1 && S.step < 7 ? '' : 'none';
   document.querySelector('nav.bottom').style.display = S.step === 0 ? 'none' : '';
@@ -370,6 +373,7 @@ const VIEWS = {
       <button type="button" class="startcard rec" id="startImport"><b>${t('imp_title')} <em>${t('imp_badge')}</em></b>
         <span>${t('imp_desc')}</span></button>
       <button type="button" class="startcard" id="startManual"><b>${t('man_title')}</b><span>${t('man_desc')}</span></button>
+      <button type="button" class="startcard" id="startFree"><b>${t('free_title')} <em style="background:var(--ok)">${t('free_badge')}</em></b><span>${t('free_desc')}</span></button>
       <button type="button" class="startcard" id="startMine" style="background:transparent"><b>${t('mine_title')}</b><span>${t('mine_desc')}</span></button>
       <h3 class="sec">${t('why_h')}</h3>
       <div class="why">${[1, 2, 3, 4].map(i => `<div><svg viewBox="0 0 24 24" aria-hidden="true">${whyIco[i - 1]}</svg><b>${t('why' + i + '_t')}</b><p>${t('why' + i + '_p')}</p></div>`).join('')}</div>
@@ -404,6 +408,21 @@ const VIEWS = {
       <div class="err" id="err"></div>`;
   },
   3() {
+    if (S.plan === 'free') {
+      const c = copyOf(W());
+      return `<h2>${t('contact_h')}</h2>
+        <p class="lead">${t('contact_p')}</p>
+        <label class="f">${t('company_l')} <small>· ${t('optional')}</small></label>
+        <input class="t" id="company" data-lim="company" value="${esc(S.company[W()] || '')}" placeholder="${t('company_ph')}" autocomplete="organization">
+        <label class="f">${t('mobile_l')}</label>
+        <input class="t" id="phone" type="tel" inputmode="tel" value="${esc(S.phone)}" placeholder="010-0000-0000" autocomplete="tel">
+        <label class="f">${t('email_l')}</label>
+        <input class="t" id="email" type="email" inputmode="email" value="${esc(S.email)}" placeholder="name@example.com" autocomplete="email">
+        <p class="hint">${t('need_one')}</p>
+        <label class="f">${t('f_slogan')} <small>· ${t('f_slogan_sub')}</small></label>
+        <textarea class="t" id="slogan" data-lim="slogan" style="min-height:64px" placeholder="${t('copy_ph')}">${esc(c.slogan)}</textarea>
+        <div class="err" id="err"></div>`;
+    }
     return `<h2>${t('contact_h')}</h2>
       <p class="lead">${t('contact_p')}</p>
       <label class="f">${t('company_l')} <small>· ${t('optional')}</small></label>
@@ -502,7 +521,14 @@ const VIEWS = {
           ${COPY_FIELDS.map(([k, label]) => `<label class="f">${t(label)}</label><textarea class="t" data-tr="${k}" data-l="${l}">${esc(copyOf(l)[k])}</textarea>`).join('')}
           <label class="f">${t('specs_l')} <small>· ${t('specs_sub2')}</small></label><textarea class="t" data-tr="specialties" data-l="${l}">${esc((copyOf(l).specialties || []).join('\n'))}</textarea></div>`).join('')}
         <button type="button" class="btn ghost wide" id="retrBtn" style="margin-top:14px">${t('retr')}</button></details>` : ''}
-      ${S.editing ? `<div class="card"><button type="button" class="btn brand wide" id="saveBtn">${t('save_changes')}</button><div class="err" id="err"></div></div>` : `<div class="card">
+      ${S.editing ? `<div class="card"><button type="button" class="btn brand wide" id="saveBtn">${t('save_changes')}</button><div class="err" id="err"></div></div>`
+        : S.plan === 'free' ? `<div class="card">
+        <label class="consent"><input type="checkbox" id="agree"> <span>${t('consent')} <a href="${AC_CARDBOOK}privacy.html" target="_blank" rel="noopener">${t('policy')}</a></span></label>
+        ${IN_APP ? `<div class="inapp" style="margin-top:12px">${t('inapp2')}</div>` : ''}
+        <button type="button" class="btn brand wide" id="pubBtn" style="margin-top:14px">${t('free_pub_btn')}</button>
+        <p class="hint">${t('free_note')} <a href="terms.html" target="_blank" rel="noopener">${t('terms_link')}</a></p>
+        <div class="err" id="err"></div>
+      </div>` : `<div class="card">
         <div class="pricebox"><span>${t('pay_l', { n: S.langs.length })}</span><b>${acWon(acPrice(S.langs))}</b></div>
         <label class="consent"><input type="checkbox" id="agree"> <span>${t('consent')} <a href="${AC_CARDBOOK}privacy.html" target="_blank" rel="noopener">${t('policy')}</a></span></label>
         ${IN_APP ? `<div class="inapp" style="margin-top:12px">${t('inapp2')}</div>` : ''}
@@ -568,6 +594,14 @@ const AFTER = {
     $('title').oninput = e => { S.title[W()] = e.target.value; unauto('title'); save(); };
   },
   3() {
+    if (S.plan === 'free') {
+      $('company').oninput = e => { S.company[W()] = e.target.value; save(); };
+      $('phone').oninput = e => { S.phone = e.target.value; save(); };
+      $('phone').onblur = e => { S.phone = fmtPhone(e.target.value); e.target.value = S.phone; save(); };
+      $('email').oninput = e => { S.email = e.target.value.trim(); save(); };
+      $('slogan').oninput = e => { copyOf(W()).slogan = e.target.value; save(); };
+      return;
+    }
     $('company').oninput = e => { S.company[W()] = e.target.value; unauto('company'); save(); };
     $('phone').oninput = e => { S.phone = e.target.value; unauto('phone'); save(); };
     $('phone').onblur = e => { S.phone = fmtPhone(e.target.value); e.target.value = S.phone; save(); };
@@ -592,6 +626,13 @@ const AFTER = {
     $('startImport').onclick = () => { $('importInput').value = ''; $('importInput').click(); };
     if ($('adminLogin')) $('adminLogin').onclick = adminLogin;
     $('startManual').onclick = () => { S.mode = 'manual'; S.step = 1; IMP.stage = null; save(); render(); };
+    $('startFree').onclick = () => {
+      S.mode = 'manual'; S.plan = 'free'; S.langs = [UI]; S.src = UI;
+      S.images = { profile: '', second: '', secondType: 'hero' }; S.chapter = ''; S.phone2 = ''; S.links = [];   // 무료판: 사진·챕터스타일·SNS 없음
+      Object.assign(S.design, { tpl: 'minimal', colorMode: 'preset', presetIdx: 0, main: AC_PRESETS[0][1], sub: AC_PRESETS[0][2], point: AC_PRESETS[0][3] });
+      delete S.design.font;
+      S.step = 2; IMP.stage = null; save(); render();
+    };
     $('startMine').onclick = openMine;
     document.querySelectorAll('[data-go="start"]').forEach(b => b.onclick = () => $('startSec').scrollIntoView({ behavior: 'smooth', block: 'start' }));
     // 첫 화면 예시 명함 — 가상 인물, 화면 언어로
@@ -657,7 +698,7 @@ const AFTER = {
       save(); if (previewLang === l) drawPreview(l);
     });
     const rt = $('retrBtn'); if (rt) rt.onclick = () => translateAll(true);
-    if (S.editing) $('saveBtn').onclick = saveEdit; else $('pubBtn').onclick = publish;
+    if (S.editing) $('saveBtn').onclick = saveEdit; else $('pubBtn').onclick = S.plan === 'free' ? publishFree : publish;
     translateAll(false);
   },
 };
@@ -696,6 +737,10 @@ const CHECK = {
   3() {
     if (!S.phone.trim() && !S.email.trim()) return fail(t('e_contact'));
     if (S.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.email)) return fail(t('e_email'));
+    if (S.plan === 'free') {
+      if (!(copyOf(W()).slogan || '').trim()) return fail(t('e_slogan'));
+      return lenOk([['company', S.company[W()], 'company_l'], ['slogan', copyOf(W()).slogan, 'f_slogan']]);
+    }
     S.links = S.links.filter(l => l.url || l.label);
     if (S.links.some(l => !l.url)) return fail(t('e_link'));
     return lenOk([['company', S.company[W()], 'company_l'], ['chapter', S.chapter, 'chapter_l']]);
@@ -708,11 +753,21 @@ const CHECK = {
     return lenOk([['ans', S.answers.work, 'q1'], ['ans', S.answers.customer, 'q2'], ['ans', S.answers.referral, 'q3'], ...COPY_FIELDS.map(([k, label]) => [k, c[k], label])]);
   },
 };
+// 무료판은 0(시작)→2(이름)→3(연락처·한줄소개)→7(미리보기·발행)만 거치고 사진·하는 일·디자인(4·5·6단계)은 건너뜀
+const FREE_ORDER = [0, 2, 3, 7];
 $('nextBtn').onclick = () => {
   if (CHECK[S.step] && !CHECK[S.step]()) return;
-  S.step = Math.min(7, S.step + 1); save(); render();
+  if (S.plan === 'free') { const i = FREE_ORDER.indexOf(S.step); S.step = i >= 0 && i < FREE_ORDER.length - 1 ? FREE_ORDER[i + 1] : 7; }
+  else S.step = Math.min(7, S.step + 1);
+  save(); render();
 };
-$('prevBtn').onclick = () => { S.step = Math.max(S.editing ? 2 : 0, S.step - 1); if (S.step === 0) IMP.stage = null; save(); render(); };
+$('prevBtn').onclick = () => {
+  let s;
+  if (S.plan === 'free') { const i = FREE_ORDER.indexOf(S.step); s = i > 0 ? FREE_ORDER[i - 1] : 0; }
+  else s = S.step - 1;
+  S.step = Math.max(S.editing ? 2 : 0, s);
+  if (S.step === 0) IMP.stage = null; save(); render();
+};
 
 // ===================================================================
 // AI (Cloudflare Worker cardbook-ai 경유 — API 키는 Worker Secret에만)
@@ -1036,7 +1091,7 @@ async function editCard(id) {
     if (!c) { const user = await signIn('mine'); if (!user) return; const snap = await fb().db.collection('autocards').doc(id).get(); if (!snap.exists) return toast(t('v_nf_h')); c = { id, ...snap.data() }; }
   } catch (e) { return toast(t('mine_fail', { m: e.message || e.code })); }
   const st = blankState(), editing = c.status !== 'draft';
-  Object.assign(st, { cardId: id, status: c.status, createdAt: c.createdAt || 0, ref: c.referredBy || '', mode: 'edit', editing,
+  Object.assign(st, { cardId: id, status: c.status, createdAt: c.createdAt || 0, ref: c.referredBy || '', mode: 'edit', editing, plan: c.plan === 'free' ? 'free' : '',
     langs: c.langs, src: c.src || c.langs[0], name: c.name || {}, title: c.title || {}, company: c.company || {},
     phone: c.phone || '', phone2: c.phone2 || '', email: c.email || '', links: c.links || [], chapter: c.chapter || '', showChapter: c.showChapter !== false,
     answers: Object.assign(st.answers, c.answers || {}), copy: c.copy || {}, images: Object.assign(st.images, c.images || {}), design: Object.assign(st.design, c.design || {}),
@@ -1051,7 +1106,7 @@ async function editCard(id) {
 }
 let ADDL = null;   // 언어 추가 패널: null(닫힘) | [고른 언어]
 function editBanner() {
-  const canAdd = S.status === 'published' && S.langs.length < AC_MAX_LANGS;
+  const canAdd = S.status === 'published' && S.langs.length < AC_MAX_LANGS && S.plan !== 'free';   // 무료판은 다국어 없음 — 필요하면 새로 유료 명함
   return `<div class="callout" style="margin-bottom:6px">${t('edit_banner', { name: esc(S.name[W()] || S.name[base()] || '') })}
     <br><small>${S.langs.map(l => AC_LANGS[l]).join(' · ')}</small>
     <br>${canAdd ? `<button type="button" class="linkbtn" id="addLangBtn" style="margin-right:14px">${t('add_lang_btn')}</button>` : ''}<button type="button" class="linkbtn" id="editCancel">${t('edit_cancel')}</button>
@@ -1125,6 +1180,25 @@ async function publish() {
     err.textContent = t('pub_fail', { m: e.message || e.code });
   } finally {
     if ($('pubBtn')) { $('pubBtn').disabled = false; $('pubBtn').textContent = t('pay_pub_btn', { price: acWon(acPrice(S.langs), false) }); }
+  }
+}
+
+// 완전 무료판 발행 — 결제 없이 로그인만 하면 바로 published(사진·다국어 없음이라 규칙에서 확인)
+async function publishFree() {
+  const err = $('err'), btn = $('pubBtn');
+  if (!$('agree').checked) { err.textContent = t('agree_need'); return; }
+  err.textContent = ''; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + t('signing');
+  try {
+    const user = await signIn();
+    if (!user) return;
+    await doPublish(user, msg => { btn.innerHTML = '<span class="spinner"></span> ' + msg; }, 'published');
+    toast(t('pay_ok'));
+    render();
+  } catch (e) {
+    console.error(e);
+    err.textContent = t('pub_fail', { m: e.message || e.code });
+  } finally {
+    if ($('pubBtn')) { $('pubBtn').disabled = false; $('pubBtn').textContent = t('free_pub_btn'); }
   }
 }
 

@@ -502,7 +502,9 @@ const VIEWS = {
     if (S.plan === 'free') {
       return `<h2>${t('free_lock_h')}</h2>
         <p class="lead">${t('free_lock_p')}</p>
-        <div class="tpls">${Object.entries(AC_TEMPLATES).filter(([k]) => !CHAPTER_TPL[k]).map(([k, n]) => {
+        <div class="tpls">${Object.entries(AC_TEMPLATES).filter(([k]) => !CHAPTER_TPL[k])
+          .sort(([a], [b]) => (FREE_TEMPLATES.includes(b) ? 1 : 0) - (FREE_TEMPLATES.includes(a) ? 1 : 0))   // 무료 템플릿을 맨 위로
+          .map(([k, n]) => {
           const free = FREE_TEMPLATES.includes(k);
           return `<button type="button" class="tpl ${free ? (d.tpl === k ? 'on' : '') : 'locked'}" ${free ? `data-tpl="${k}"` : 'disabled'}><div class="thumb"><div data-thumb="${k}"></div></div><span>${t('tpl_' + k)}${free ? '' : ` <span class="lockb">${t('locked_badge')}</span>`}</span></button>`;
         }).join('')}</div>

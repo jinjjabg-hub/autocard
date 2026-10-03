@@ -12,9 +12,9 @@ const AC_FIREBASE = {
 const AC_WORKER = 'https://cardbook-ai.jinjjabg.workers.dev';
 const AC_CARDBOOK = 'https://jinjjabg-hub.github.io/cardbook/';
 // 비즈홈(T.M LINK) — 명함보다 자세히 보여주고 싶은 사람에게 6단계에서 안내. 가격은 T.M-LINK 사이트와 같게 유지
-const AC_BIZHOME = 'https://jinjjabg-hub.github.io/T.M-LINK/';
+const AC_BIZHOME = 'https://jinjjabg-hub.github.io/T.M-LINK/bizhome/';
 const AC_BIZHOME_EX = 'https://jinjjabg-hub.github.io/DiCA-gallery/';
-const AC_BIZHOME_PLANS = [['BASIC', 150000, 'bh_basic'], ['STANDARD', 210000, 'bh_std'], ['PREMIUM', 270000, 'bh_prem']];
+const AC_BIZHOME_PLANS = [['STANDARD', 150000, 'bh_std'], ['PREMIUM', 250000, 'bh_prem']];  // T.M-LINK 사이트 가격과 같아야 함 (2026-10-03: 15만 / 25만)
 const AC_ADMIN_EMAILS = ['jinjjabg@gmail.com'];   // firestore.rules의 관리자 이메일과 같아야 함
 
 // 가격: 기본 1개 언어 5,900원 + 추가 언어당 5,000원, 최대 4개 언어

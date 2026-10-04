@@ -40,6 +40,16 @@
   .modal .box { background: #fff; border-radius: 20px; padding: 24px; text-align: center; width: 100%; max-width: 320px; }
   .modal #qr { display: flex; justify-content: center; margin: 8px 0 14px; }
   .modal button { border: 0; background: #141414; color: #fff; border-radius: 10px; padding: 12px 18px; font: 700 14px 'Noto Sans KR', sans-serif; width: 100%; cursor: pointer; }
+  .imgm .box { max-width: 380px; max-height: 92vh; overflow: auto; }
+  .imgm h3 { margin: 0 0 12px; font-size: 17px; }
+  .imgm .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .imgm .tabs button { background: #EEE; color: #141414; padding: 10px 6px; font-size: 13px; }
+  .imgm .tabs button.on { background: #141414; color: #fff; }
+  .imgm .pv { background: #EEE; border-radius: 12px; min-height: 120px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+  .imgm .pv img { max-width: 100%; max-height: 42vh; border-radius: 8px; display: block; }
+  .imgm .tip { font-size: 12px; line-height: 1.6; color: #555; text-align: left; margin: 0 0 12px; }
+  .imgm .row { display: grid; gap: 8px; }
+  .imgm .row .alt { background: #fff; color: #141414; border: 1.5px solid #141414; }
   .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #141414; color: #fff; padding: 12px 18px; border-radius: 12px; font-size: 13px; z-index: 60; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .toast.on { opacity: 1; }
 </style>
@@ -51,6 +61,13 @@
   <div id="card"><div class="state"><div class="spin"></div><span id="loadingTxt"></span></div></div>
 </div>
 <div class="modal" id="qrModal"><div class="box"><div id="qrName" style="font-weight:800;margin-bottom:4px"></div><div id="qr"></div><button type="button" id="qrClose" onclick="document.getElementById('qrModal').classList.remove('on')"></button></div></div>
+<div class="modal imgm" id="imgModal"><div class="box">
+  <h3 id="imgH"></h3>
+  <div class="tabs" id="imgTabs"></div>
+  <div class="pv" id="imgPv"></div>
+  <p class="tip" id="imgTip"></p>
+  <div class="row"><button type="button" id="imgSave"></button><button type="button" class="alt" id="imgShare"></button><button type="button" class="alt" id="imgClose"></button></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-app-compat.js"></script>
@@ -59,6 +76,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="../assets/common.js"></script>
 <script src="../assets/card.js"></script>
+<script src="../assets/share-image.js"></script>
 <script src="../assets/i18n.js"></script>
 <script>
 const params = new URLSearchParams(location.search);
@@ -120,6 +138,7 @@ document.addEventListener('click', e => {
   if (act === 'vcf') saveVcf();
   if (act === 'share') share();
   if (act === 'qr') showQr();
+  if (act === 'img') openImg();
 });
 
 // 카드북 저장 — 기존 DiCA와 같은 방식: 카드북 주소에 명함 정보를 파라미터로 넘기면
@@ -163,6 +182,40 @@ function showQr() {
   $('qrName').textContent = v.name;
   $('qrModal').classList.add('on');
 }
+
+// 이미지로 저장 — 인스타 스토리·피드 / PPT / 카톡 프로필
+const IMG_FMT = ['story', 'feed', 'ppt', 'kakao'];
+let imgFmt = 'story', imgBlob = null, imgSeq = 0;
+function openImg() {
+  $('imgH').textContent = t('img_h'); $('imgSave').textContent = t('img_save'); $('imgShare').textContent = t('img_share'); $('imgClose').textContent = t('close');
+  $('imgTabs').innerHTML = IMG_FMT.map(f => `<button type="button" data-f="${f}">${t('img_' + f)}</button>`).join('');
+  $('imgShare').style.display = navigator.canShare ? '' : 'none';
+  $('imgModal').classList.add('on'); pickImg(imgFmt);
+}
+async function pickImg(f) {
+  imgFmt = f; imgBlob = null; const seq = ++imgSeq;
+  document.querySelectorAll('#imgTabs button').forEach(b => b.classList.toggle('on', b.dataset.f === f));
+  $('imgTip').textContent = t('img_tip_' + f); $('imgPv').textContent = t('img_busy');
+  try {
+    const cv = await acShareCanvas(card, lang, f, acCardUrl(cardId));
+    const blob = await new Promise((r, j) => cv.toBlob(b => b ? r(b) : j(new Error('blob')), 'image/png'));
+    if (seq !== imgSeq) return;   // 그 사이 다른 탭을 눌렀으면 버림
+    imgBlob = blob; const im = new Image(); im.src = URL.createObjectURL(blob); $('imgPv').innerHTML = ''; $('imgPv').appendChild(im);
+  } catch (e) { if (seq === imgSeq) $('imgPv').textContent = t('img_fail'); }
+}
+const imgName = () => (acView(card, lang).name || 'card') + '-' + AC_IMG_FORMATS[imgFmt].file + '.png';
+$('imgTabs').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (b) pickImg(b.dataset.f); });
+$('imgClose').onclick = () => $('imgModal').classList.remove('on');
+$('imgSave').onclick = () => {
+  if (!imgBlob) return;
+  const a = document.createElement('a'); a.href = URL.createObjectURL(imgBlob); a.download = imgName();
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('imgShare').onclick = async () => {
+  if (!imgBlob) return;
+  const file = new File([imgBlob], imgName(), { type: 'image/png' });
+  try { if (navigator.canShare({ files: [file] })) await navigator.share({ files: [file] }); else $('imgSave').click(); } catch (e) { if (e.name !== 'AbortError') $('imgSave').click(); }
+};
 
 load().catch(e => showState(t('v_err_h'), t('v_err_p') + '<br><small>' + acEsc(e.message) + '</small>'));
 </script>

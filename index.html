@@ -267,10 +267,16 @@ function startFromLink() {
   if (qs.get('start') !== 'free' || S.editing) return false;
   beginFree();
   if (qs.get('from') === 'cardbook') S.from = 'cardbook';
-  const nm = (qs.get('name') || '').trim().slice(0, LIMITS.name);
+  // 카드북 본인 등록 정보(#pf={n,c,t,p}) — 해시라 서버로 안 가고, 읽은 뒤 주소에서 지운다. 예전 링크의 ?name= 도 받음
+  let pf = {}; try { const h = new URLSearchParams(location.hash.slice(1)).get('pf'); if (h) pf = JSON.parse(h) || {}; } catch (e) {}
+  const cut = (v, n) => String(v || '').trim().slice(0, n);
+  const nm = cut(pf.n || qs.get('name'), LIMITS.name);
   if (nm && !/@/.test(nm)) S.name[W()] = nm;   // 이메일이 이름 대신 들어온 경우는 넣지 않음
+  if (cut(pf.t, LIMITS.title)) S.title[W()] = cut(pf.t, LIMITS.title);
+  if (cut(pf.c, LIMITS.company)) S.company[W()] = cut(pf.c, LIMITS.company);
+  if (cut(pf.p, 20)) S.phone = cut(pf.p, 20).replace(/[^0-9+\-\s]/g, '');
   save(); render();
-  try { const u = new URL(location.href); ['start', 'from', 'name'].forEach(k => u.searchParams.delete(k)); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) {}
+  try { const u = new URL(location.href); ['start', 'from', 'name'].forEach(k => u.searchParams.delete(k)); history.replaceState(null, '', u.pathname + u.search); } catch (e) {}
   return true;
 }
 

@@ -261,6 +261,24 @@ function beginFree() {
   Object.assign(S.design, { tpl: 'minimal', colorMode: 'preset', presetIdx: 0, main: AC_PRESETS[0][1], sub: AC_PRESETS[0][2], point: AC_PRESETS[0][3] });
   S.step = 2; IMP.stage = null; save(); render();
 }
+// 카드북에서 "무료 명함 만들기"로 왔을 때(?start=free&from=cardbook&name=) → 소개 화면 없이 무료판 이름 칸부터, 카드북 이름을 미리 채움.
+// 주소의 start·name은 바로 지워서 새로고침해도 하던 내용이 처음부터 다시 시작되지 않게 한다
+function startFromLink() {
+  if (qs.get('start') !== 'free' || S.editing) return false;
+  beginFree();
+  if (qs.get('from') === 'cardbook') S.from = 'cardbook';
+  // 카드북 본인 등록 정보(#pf={n,c,t,p}) — 해시라 서버로 안 가고, 읽은 뒤 주소에서 지운다. 예전 링크의 ?name= 도 받음
+  let pf = {}; try { const h = new URLSearchParams(location.hash.slice(1)).get('pf'); if (h) pf = JSON.parse(h) || {}; } catch (e) {}
+  const cut = (v, n) => String(v || '').trim().slice(0, n);
+  const nm = cut(pf.n || qs.get('name'), LIMITS.name);
+  if (nm && !/@/.test(nm)) S.name[W()] = nm;   // 이메일이 이름 대신 들어온 경우는 넣지 않음
+  if (cut(pf.t, LIMITS.title)) S.title[W()] = cut(pf.t, LIMITS.title);
+  if (cut(pf.c, LIMITS.company)) S.company[W()] = cut(pf.c, LIMITS.company);
+  if (cut(pf.p, 20)) S.phone = cut(pf.p, 20).replace(/[^0-9+\-\s]/g, '');
+  save(); render();
+  try { const u = new URL(location.href); ['start', 'from', 'name'].forEach(k => u.searchParams.delete(k)); history.replaceState(null, '', u.pathname + u.search); } catch (e) {}
+  return true;
+}
 
 // 이미지 명함 가져오기 진행 상태 — 원본 이미지는 이 변수(메모리)에만 있고 저장하지 않는다
 const IMP = { stage: null, img: '', w: 0, h: 0, result: null, crop: null, error: '' };
@@ -602,7 +620,7 @@ function doneView() {
       <div class="card" style="text-align:left">
         <b style="font-size:14px">${t('cb_h')}</b>
         <p class="hint" style="font-size:13px">${t('cb_p')}</p>
-        <a class="btn ${live ? 'brand' : 'ghost'} wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}${live ? '?mycard=' + encodeURIComponent(url) : ''}" target="_blank" rel="noopener">${live ? t('cb_open') : t('cb_open_only')}</a>
+        <a class="btn ${live ? 'brand' : 'ghost'} wide" style="text-decoration:none;margin-top:6px" href="${AC_CARDBOOK}${live ? '?mycard=' + encodeURIComponent(url) : ''}" ${S.from === 'cardbook' ? '' : 'target="_blank" rel="noopener"'}>${live ? t('cb_open') : t('cb_open_only')}</a>
       </div>
       ${live && S.plan === 'free' ? `<div class="card" style="text-align:left">
         <b style="font-size:14px">${t('free_up_h')}</b>
@@ -1372,7 +1390,7 @@ if (dynLangs.length) {
   if (acUiIsDynamic()) setTimeout(() => toast('Translating the screen into ' + AC_LANGS[UI] + '…'), 300);
   Promise.all(dynLangs.map(l => acLoadLang(l).catch(() => false))).then(() => { fillUiSelect(); render(); });
 }
-render();
+if (!startFromLink()) render();
 </script>
 </body>
 </html>

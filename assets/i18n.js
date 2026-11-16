@@ -390,6 +390,9 @@ const AC_T = {
   leads_save: ['카드북에 저장', 'Save to CardBook', 'CardBookに保存', '保存到CardBook', 'Lưu vào CardBook', 'CardBook-д хадгалах', 'บันทึกลง CardBook', 'Guardar en CardBook', 'Enregistrer dans CardBook'],
   leads_del: ['지우기', 'Delete', '削除', '删除', 'Xóa', 'Устгах', 'ลบ', 'Eliminar', 'Supprimer'],
   leads_del_q: ['이 연락처를 지울까요?', 'Delete this contact?', 'この連絡先を削除しますか？', '要删除这个联系方式吗？', 'Xóa liên hệ này?', 'Энэ мэдээллийг устгах уу?', 'ลบรายชื่อนี้ไหม', '¿Eliminar este contacto?', 'Supprimer ce contact ?'],
+  addr_l: ['주소', 'Address', '住所', '地址', 'Địa chỉ', 'Хаяг', 'ที่อยู่', 'Dirección', 'Adresse'],
+  addr_sub: ['선택 · 누르면 지도가 열려요', 'optional · opens a map when tapped', '任意・タップで地図が開きます', '选填·点击可打开地图', 'không bắt buộc · chạm để mở bản đồ', 'заавал биш · дарахад газрын зураг нээгдэнэ', 'ไม่บังคับ · แตะเพื่อเปิดแผนที่', 'opcional · abre el mapa al tocar', 'facultatif · ouvre une carte'],
+  addr_ph: ['예: 부산 사상구 가야대로 1', 'e.g. 1 Main St, Busan', '例：東京都港区1-1', '例如：上海市浦东新区1号', 'VD: 1 Lê Lợi, Quận 1', 'Жишээ: Улаанбаатар, СБД 1', 'เช่น 1 ถนนสุขุมวิท กรุงเทพฯ', 'p. ej. Calle Mayor 1, Madrid', 'ex. 1 rue de Rivoli, Paris'],
   cb_open_only: ['카드북 열기', 'Open CardBook', 'CardBookを開く', '打开 CardBook', 'Mở CardBook', 'CardBook нээх', 'เปิด CardBook', 'Abrir CardBook', 'Ouvrir CardBook'],
 };
 

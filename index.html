@@ -234,7 +234,7 @@ function blankState() {
     langs: [UI],   // 명함 언어 목록. 첫 번째 = 기본 언어(명함을 열면 처음 보이는 언어)
     src: UI,       // 입력 언어(직접 적는 언어) = 화면 언어. 문구는 여기에 적고 명함의 다른 언어로 번역. 명함 언어에 없어도 됨
     name: {}, title: {}, company: {}, nameAuto: {},   // nameAuto: 번역 때 자동으로 넣은 다른 언어 이름(본인이 고치면 덮어쓰지 않음)
-    phone: '', phone2: '', email: '', links: [], chapter: '', showChapter: true,
+    phone: '', phone2: '', email: '', address: '', links: [], chapter: '', showChapter: true,
     answers: { work: '', customer: '', referral: '' },
     copy: {},
     images: { profile: '', second: '', secondType: 'hero' },
@@ -340,7 +340,7 @@ function onlyLangs(o) { const r = {}; S.langs.forEach(l => { if (o[l] !== undefi
 function cardData() {   // 렌더러·Firestore에 넘기는 명함 데이터 (스펙의 autocards 구조)
   return {
     langs: S.langs, name: onlyLangs(S.name), title: onlyLangs(S.title), company: onlyLangs(S.company),
-    phone: S.phone, phone2: S.phone2 || '', email: S.email, links: S.links.filter(l => l.url),
+    phone: S.phone, phone2: S.phone2 || '', email: S.email, address: (S.address || '').trim(), links: S.links.filter(l => l.url),
     chapter: S.chapter || '', showChapter: S.showChapter !== false,
     answers: S.answers, copy: onlyLangs(S.copy), images: S.images,
     design: { tpl: S.design.tpl, colorMode: S.design.colorMode, main: S.design.main, sub: S.design.sub, point: S.design.point, photo: S.design.photo || 'small', ...(AC_FONTS[S.design.font] ? { font: S.design.font } : {}) },
@@ -454,6 +454,8 @@ const VIEWS = {
         <p class="hint">${t('need_one')}</p>
         <label class="f">${t('f_slogan')} <small>· ${t('f_slogan_sub')}</small></label>
         <textarea class="t" id="slogan" data-lim="slogan" style="min-height:64px" placeholder="${t('copy_ph')}">${esc(c.slogan)}</textarea>
+        <label class="f">${t('addr_l')} <small>· ${t('addr_sub')}</small></label>
+      <input class="t${autoCls('address')}" data-auto="address" id="address" maxlength="80" value="${esc(S.address || '')}" placeholder="${t('addr_ph')}" autocomplete="street-address">${autoHint('address')}
         <label class="f">${t('links_l')} <small>· ${t('optional')}</small></label>
         <input class="t" id="freeLink" value="${esc((S.links[0] || {}).url || '')}" placeholder="${t('link_url_ph')}" inputmode="url">
         <div class="err" id="err"></div>`;
@@ -472,6 +474,8 @@ const VIEWS = {
       <label class="f">${t('chapter_l')} <small>· ${t('optional')}</small></label>
       <input class="t${autoCls('chapter')}" data-auto="chapter" id="chapter" data-lim="chapter" value="${esc(S.chapter || '')}" placeholder="${t('chapter_ph')}">${autoHint('chapter')}
       <label class="consent" style="margin-top:8px"><input type="checkbox" id="showChapter" ${S.showChapter !== false ? 'checked' : ''}> <span>${t('chapter_badge', { badge: esc((AC_UI[UI] || AC_UI.en).chapter.replace('{c}', S.chapter || '○○')) })}</span></label>
+      <label class="f">${t('addr_l')} <small>· ${t('addr_sub')}</small></label>
+      <input class="t${autoCls('address')}" data-auto="address" id="address" maxlength="80" value="${esc(S.address || '')}" placeholder="${t('addr_ph')}" autocomplete="street-address">${autoHint('address')}
       <label class="f">${t('links_l')} <small>· ${t('links_sub', { n: AC_MAX_LINKS })}</small></label>
       <div id="links">${S.links.map((l, i) => `<div class="row" style="margin-bottom:8px">
         <input class="t" style="flex:0 0 34%" data-ll="${i}" value="${esc(l.label)}" placeholder="${t('link_label_ph')}">
@@ -667,6 +671,7 @@ const AFTER = {
       $('phone').oninput = e => { S.phone = e.target.value; save(); };
       $('phone').onblur = e => { S.phone = fmtPhone(e.target.value); e.target.value = S.phone; save(); };
       $('email').oninput = e => { S.email = e.target.value.trim(); save(); };
+      $('address').oninput = e => { S.address = e.target.value; unauto('address'); save(); };
       $('slogan').oninput = e => { copyOf(W()).slogan = e.target.value; save(); };
       $('freeLink').oninput = e => { const u = e.target.value.trim(); S.links = u ? [{ label: '', url: u }] : []; save(); };
       return;
@@ -675,6 +680,7 @@ const AFTER = {
     $('phone').oninput = e => { S.phone = e.target.value; unauto('phone'); save(); };
     $('phone').onblur = e => { S.phone = fmtPhone(e.target.value); e.target.value = S.phone; save(); };
     $('email').oninput = e => { S.email = e.target.value.trim(); unauto('email'); save(); };
+    $('address').oninput = e => { S.address = e.target.value; unauto('address'); save(); };
     $('phone2').oninput = e => { S.phone2 = e.target.value; unauto('phone2'); save(); };
     $('phone2').onblur = e => { S.phone2 = fmtPhone(e.target.value); e.target.value = S.phone2; save(); };
     $('chapter').oninput = e => { S.chapter = e.target.value.trim(); unauto('chapter'); save(); };
@@ -997,6 +1003,7 @@ function applyImport(r) {
   set('phone', r.phone, () => { S.phone = r.phone; });
   set('phone2', r.phone2, () => { S.phone2 = r.phone2; });
   set('email', r.email, () => { S.email = r.email; });
+  set('address', r.address, () => { S.address = String(r.address).slice(0, 80); });
   set('chapter', r.chapter, () => { S.chapter = r.chapter; S.showChapter = true; });
   // 링크: 홈페이지 + SNS(인스타·블로그 등). 이미 있는 주소는 건너뜀, 최대 3개
   const found = [r.website ? { label: t('homepage'), url: r.website } : null, ...(r.sns || [])].filter(Boolean)
@@ -1198,7 +1205,7 @@ async function editCard(id) {
   const st = blankState(), editing = c.status !== 'draft';
   Object.assign(st, { cardId: id, status: c.status, createdAt: c.createdAt || 0, ref: c.referredBy || '', mode: 'edit', editing, plan: c.plan === 'free' ? 'free' : '',
     langs: c.langs, src: c.src || c.langs[0], name: c.name || {}, title: c.title || {}, company: c.company || {},
-    phone: c.phone || '', phone2: c.phone2 || '', email: c.email || '', links: c.links || [], chapter: c.chapter || '', showChapter: c.showChapter !== false,
+    phone: c.phone || '', phone2: c.phone2 || '', email: c.email || '', address: c.address || '', links: c.links || [], chapter: c.chapter || '', showChapter: c.showChapter !== false,
     answers: Object.assign(st.answers, c.answers || {}), copy: c.copy || {}, images: Object.assign(st.images, c.images || {}), design: Object.assign(st.design, c.design || {}),
     auto: {}, nameAuto: {}, step: editing ? 2 : 7 });
   if (st.design.colorMode === 'image') st.design.colorMode = 'custom';   // 원본 이미지 색 정보는 저장하지 않으므로 지금 색을 직접 선택으로

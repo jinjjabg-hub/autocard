@@ -91,6 +91,15 @@
 .ac-crow em { font-style: normal; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* 맨 아래 작은 아이콘 3개 + 만들기 링크 */
+/* 링크 로고 줄 + 주소 한 줄 (비즈홈과 같은 구성) */
+.ac-logos { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 16px; }
+.ac-logos a { display: block; line-height: 0; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+.ac-logos svg { width: 52px; height: 52px; display: block; }
+.ac-logos a:active { transform: scale(.94); }
+.ac-addr { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--surface); color: var(--on-surface); border: 1px solid var(--line); text-decoration: none; text-align: left; }
+.ac-addr i { display: flex; flex-shrink: 0; color: var(--accent-surface); }
+.ac-addr span { flex: 1; font-size: 13px; font-weight: 600; line-height: 1.5; }
+.ac-addr b { font-size: 12px; font-weight: 800; white-space: nowrap; color: var(--accent-surface); }
 /* 내 연락처 남기기 — 연락처 줄과 같은 모양의 버튼, 누르면 아래로 입력 칸이 펼쳐짐 */
 .ac-sec-lead { margin-top: 10px; }
 .ac-lead-open { width: 100%; border: 1px dashed var(--line); font: inherit; text-align: left; cursor: pointer; }

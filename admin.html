@@ -38,6 +38,7 @@
     <button type="button" data-s="pending" class="on">승인 대기</button>
     <button type="button" data-s="published">발행됨</button>
     <button type="button" data-s="draft">작성 중</button>
+    <button type="button" data-s="stats">유입 집계</button>
   </div>
   <div id="list"></div>
 </div>
@@ -70,6 +71,7 @@ document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => {
 
 async function load() {
   $('list').innerHTML = '<div class="empty">불러오는 중…</div>';
+  if (tab === 'stats') return loadStats();
   try {
     const snap = await db.collection('autocards').where('status', '==', tab).get();
     const docs = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -91,6 +93,22 @@ async function load() {
     }).join('');
     document.querySelectorAll('[data-pub]').forEach(b => b.onclick = () => setStatus(b.dataset.pub, 'published'));
     document.querySelectorAll('[data-unpub]').forEach(b => b.onclick = () => { if (confirm('이 명함을 비공개(승인 대기)로 돌릴까요?')) setStatus(b.dataset.unpub, 'pending'); });
+  } catch (e) { $('list').innerHTML = `<div class="empty">불러오기 실패: ${acEsc(e.message)}</div>`; }
+}
+
+// 유입 집계 — 누구 명함을 보고 만들었는지(referredBy), 어느 경로로 왔는지(via = 주소의 ?src=). 확산 고리가 실제로 도는지 숫자로 본다
+async function loadStats() {
+  try {
+    const all = (await db.collection('autocards').get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(c => Array.isArray(c.langs));
+    const nameOf = id => { const c = all.find(x => x.id === id); return c ? acView(c, c.langs[0]).name : id; };
+    const tally = key => { const m = {}; all.forEach(c => { const k = c[key]; if (!k) return; m[k] = m[k] || { n: 0, pub: 0, paid: 0 }; m[k].n++; if (c.status === 'published') { m[k].pub++; if (c.plan !== 'free') m[k].paid++; } }); return Object.entries(m).sort((a, b) => b[1].n - a[1].n); };
+    const table = (title, rows, label) => `<div class="item" style="display:block"><b>${title}</b>${rows.length ? `<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:13px">
+      <tr style="text-align:left;color:#777"><th>${label}</th><th>만든 수</th><th>발행</th><th>유료</th></tr>
+      ${rows.map(([k, v]) => `<tr style="border-top:1px solid #eee"><td style="padding:6px 0">${acEsc(label === '명함' ? nameOf(k) : k)}</td><td>${v.n}</td><td>${v.pub}</td><td>${v.paid}</td></tr>`).join('')}</table>` : '<div class="muted" style="margin-top:6px">아직 없어요</div>'}</div>`;
+    const pub = all.filter(c => c.status === 'published');
+    $('list').innerHTML = `<div class="item" style="display:block"><b>전체</b><div style="margin-top:6px;font-size:14px">명함 ${all.length}개 · 발행 ${pub.length}개(유료 ${pub.filter(c => c.plan !== 'free').length} / 무료 ${pub.filter(c => c.plan === 'free').length}) · 다른 명함을 보고 만든 것 ${all.filter(c => c.referredBy).length}개</div></div>`
+      + table('명함별 — 이 명함을 보고 만든 사람', tally('referredBy'), '명함') + table('경로별 — 주소에 ?src=이름 을 붙여 보낸 링크', tally('via'), '경로')
+      + `<div class="muted" style="padding:8px 4px;font-size:12px">경로 링크 예: ${acEsc(location.origin + location.pathname.replace(/admin\.html$/, ''))}?src=pioneer</div>`;
   } catch (e) { $('list').innerHTML = `<div class="empty">불러오기 실패: ${acEsc(e.message)}</div>`; }
 }
 

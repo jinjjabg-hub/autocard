@@ -120,6 +120,25 @@ document.addEventListener('click', e => {
   if (act === 'vcf') saveVcf();
   if (act === 'share') share();
   if (act === 'qr') showQr();
+  if (act === 'lead') { const f = a.parentElement.querySelector('.ac-lead'); f.hidden = !f.hidden; a.setAttribute('aria-expanded', String(!f.hidden)); if (!f.hidden) f.elements.name.focus(); }
+});
+
+// 내 연락처 남기기 — Worker가 명함 주인만 볼 수 있는 곳에 저장(도배 방지: 하루 횟수 제한)
+document.addEventListener('submit', async e => {
+  const f = e.target.closest('.ac-lead'); if (!f) return;
+  e.preventDefault();
+  const ui = acView(card, lang).ui, msg = f.querySelector('.ac-lead-msg'), btn = f.querySelector('button[type=submit]');
+  const name = f.elements.name.value.trim(), phone = f.elements.phone.value.trim(), digits = phone.replace(/\D/g, '');
+  if (!name || digits.length < 8 || digits.length > 15 || !f.elements.agree.checked) { msg.textContent = ui.leadCheck; return; }
+  if (card.status !== 'published') { msg.textContent = ui.leadFail; return; }
+  btn.disabled = true; msg.textContent = '';
+  try {
+    const res = await fetch(AC_WORKER + '/autocard/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cardId, name, phone, company: f.elements.company.value.trim(), agree: true, lang }) });
+    if (res.ok) { f.innerHTML = `<p class="ac-lead-msg">✓ ${acEsc(ui.leadDone)}</p>`; return; }
+    msg.textContent = res.status === 429 ? ui.leadLimit : ui.leadFail;
+  } catch (err) { msg.textContent = ui.leadFail; }
+  btn.disabled = false;
 });
 
 // 카드북 저장 — 기존 DiCA와 같은 방식: 카드북 주소에 명함 정보를 파라미터로 넘기면
@@ -150,7 +169,7 @@ function saveVcf() {
 }
 
 async function share() {
-  const v = acView(card, lang), url = acCardUrl(cardId);
+  const v = acView(card, lang), url = acShareUrl(cardId) + (lang !== card.langs[0] ? '?lang=' + lang : '');   // 미리보기에 이름·사진이 뜨는 공유 주소
   if (navigator.share) { try { await navigator.share({ title: v.name, text: v.slogan || v.name, url }); return; } catch (e) { if (e.name === 'AbortError') return; } }
   try { await navigator.clipboard.writeText(url); } catch (e) { prompt(t('copy_prompt'), url); return; }
   toast(v.ui.copied);

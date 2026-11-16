@@ -34,3 +34,7 @@ function acCardUrl(id) {
   const base = location.origin + location.pathname.replace(/\/(c\/)?(index\.html|admin\.html)?$/, '/');
   return base + 'c/?id=' + encodeURIComponent(id);
 }
+
+// 공유용 주소 — 카톡·문자에 붙이면 그 사람 이름·사진(OG 이미지)이 미리보기로 뜬다. Worker가 미리보기 정보만 넣고 바로 위 명함 주소로 보낸다.
+// 카드북 저장·내 명함 등록·QR은 원래 주소(acCardUrl)를 그대로 쓴다(카드북 규칙이 그 주소 모양을 확인하고, QR은 한 번에 열려야 해서).
+function acShareUrl(id) { return AC_WORKER + '/c/' + encodeURIComponent(id); }

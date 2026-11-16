@@ -216,6 +216,7 @@
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/11.0.1/firebase-storage-compat.js"></script>
 <script src="https://js.tosspayments.com/v2/standard"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/card.js"></script>
 <script src="assets/i18n.js"></script>
@@ -253,6 +254,7 @@ S = loadDraft();
 try { const e = localStorage.getItem(EDIT_KEY); if (e) S = Object.assign(blankState(), JSON.parse(e)); } catch (e) {}   // 수정하다 나갔으면 이어서
 const qs = new URLSearchParams(location.search);
 if (!S.ref && qs.get('ref')) S.ref = qs.get('ref').slice(0, 40);   // 어떤 명함을 보고 왔는지 → 확산 측정용
+if (!S.via && qs.get('src')) S.via = qs.get('src').replace(/[^\w가-힣.-]/g, '').slice(0, 30);   // 어디서 왔는지(?src=insta, ?src=파이오니어) → 관리자 화면 유입 집계
 
 // 완전 무료로 시작 — 히어로·startcard·하단 버튼이 모두 이걸 부른다. 완전히 새 카드에서 시작(하다 만 초안의 "하는 일" 등이 섞여 들어가지 않게)
 function beginFree() {
@@ -614,7 +616,8 @@ function doneView() {
       <div class="big">${live ? '🎉' : '📨'}</div>
       <h2>${live ? t('done_live_h') : t('done_pend_h')}</h2>
       <p class="lead">${live ? t('done_live_p') : t('done_pend_p')}</p>
-      <div class="linkbox"><input class="t" readonly value="${esc(url)}" id="myUrl"><button type="button" class="btn" id="copyBtn">${t('copy')}</button></div>
+      <div class="linkbox"><input class="t" readonly value="${esc(acShareUrl(S.cardId))}" id="myUrl"><button type="button" class="btn" id="copyBtn">${t('copy')}</button></div>
+      <p class="hint" style="font-size:12.5px;margin:6px 0 0">${t('share_hint')}</p>
       <a class="btn ghost wide" style="margin-top:10px;text-decoration:none" href="${esc(url)}" target="_blank">${t('open_card')}</a>
       <button type="button" class="btn wide" id="editThis" style="margin-top:10px">${t('edit_this')}</button>
       <div class="card" style="text-align:left">
@@ -685,6 +688,9 @@ const AFTER = {
     if (MINE) {
       document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => editCard(b.dataset.edit));
       if ($('mineBack')) $('mineBack').onclick = () => { MINE = null; render(); };
+      document.querySelectorAll('[data-leads]').forEach(b => b.onclick = () => openLeads(b.dataset.leads));
+      document.querySelectorAll('[data-lead-del]').forEach(b => b.onclick = () => delLead(b.dataset.leadDel));
+      if ($('leadsBack')) $('leadsBack').onclick = () => { delete MINE.leads; render(); };
       return;
     }
     if (IMP.stage === 'photo') return setupCrop();
@@ -982,7 +988,7 @@ function loadImg(src) { return new Promise((ok, no) => { const i = new Image(); 
 // 추출 결과 → 각 단계 칸. 채운 칸은 S.auto에 표시(노란 배경 + "확인해주세요")
 function applyImport(r) {
   // 이미지 한 장 = 새 명함. 이전에 입력하던 내용(다른 사람 문구·답변)이 섞이지 않게 처음 상태에서 시작
-  S = Object.assign(blankState(), { ref: S.ref, mode: 'import' });
+  S = Object.assign(blankState(), { ref: S.ref, via: S.via, mode: 'import' });
   const b = W(), c = copyOf(b), A = S.auto = {};
   const set = (key, cond, fn) => { if (cond) { fn(); A[key] = 1; } };
   set('name', r.name, () => { S.name[b] = r.name; });
@@ -1140,13 +1146,38 @@ async function signIn(kind = 'publish') {
 // ===================================================================
 let MINE = null;   // null | { loading } | { cards } | { error }
 function mineView() {
+  if (MINE.leads) return leadsView();
   if (MINE.loading) return `<h2>${t('mine_h')}</h2><p class="lead"><span class="spinner" style="display:inline-block;vertical-align:middle;border-color:#ccc;border-top-color:#333"></span> ${t('mine_loading')}</p>`;
   const list = MINE.error ? `<div class="err">${esc(t('mine_fail', { m: MINE.error }))}</div>`
     : !MINE.cards.length ? `<p class="lead">${t('mine_empty')}</p>`
     : MINE.cards.map(c => { c.langs.forEach(acRegisterLang); return `<div class="card mine"><div><b>${esc(acPick(c.name, UI, c))}</b><small>${esc([acPick(c.title, UI, c), acPick(c.company, UI, c)].filter(Boolean).join(' · '))}</small><small>${c.langs.map(l => AC_LANGS[l]).join(' · ')}</small>
         <span class="badge st-${c.status}">${t('st_' + c.status)}</span></div>
-        <div class="row">${c.status !== 'draft' ? `<a class="btn ghost" href="${esc(acCardUrl(c.id))}" target="_blank">${t('open_btn')}</a>` : ''}<button type="button" class="btn" data-edit="${esc(c.id)}">${t('edit_btn')}</button></div></div>`; }).join('');
+        <div class="row">${c.status !== 'draft' ? `<a class="btn ghost" href="${esc(acCardUrl(c.id))}" target="_blank">${t('open_btn')}</a>` : ''}<button type="button" class="btn" data-edit="${esc(c.id)}">${t('edit_btn')}</button>${c.status === 'published' ? `<button type="button" class="btn ghost" data-leads="${esc(c.id)}">${t('leads_btn')}</button>` : ''}</div></div>`; }).join('');
   return `<h2>${t('mine_h')}</h2>${list}<button type="button" class="btn ghost wide" id="mineBack" style="margin-top:14px">${t('back_start')}</button>`;
+}
+// 받은 연락처 — 명함을 본 사람이 "내 연락처 남기기"로 보낸 이름·전화. 주인만 읽을 수 있다(규칙). 카드북 저장은 기존 저장 팝업 주소를 그대로 씀
+function leadsView() {
+  const L = MINE.leads;
+  const body = L.loading ? `<p class="lead"><span class="spinner" style="display:inline-block;vertical-align:middle;border-color:#ccc;border-top-color:#333"></span> ${t('mine_loading')}</p>`
+    : L.error ? `<div class="err">${esc(t('mine_fail', { m: L.error }))}</div>`
+    : !L.list.length ? `<p class="lead">${t('leads_empty')}</p>`
+    : L.list.map(x => { const tel = x.phone.replace(/[^0-9+]/g, '');
+        const cb = AC_CARDBOOK + '?' + new URLSearchParams({ name: x.name, company: x.company || '', phone: x.phone, chapter: '기타', from: 'autocard-lead' });
+        return `<div class="card mine"><div><b>${esc(x.name)}</b><small>${esc([x.company, x.phone].filter(Boolean).join(' · '))}</small><small>${new Date(x.at).toLocaleDateString(UI)}</small></div>
+        <div class="row"><a class="btn" href="tel:${esc(tel)}">${esc(AC_UI[UI] ? AC_UI[UI].call : AC_UI.en.call)}</a><a class="btn ghost" href="${esc(cb)}" target="_blank" rel="noopener">${t('leads_save')}</a><button type="button" class="btn ghost" data-lead-del="${esc(x.id)}">${t('leads_del')}</button></div></div>`; }).join('');
+  return `<h2>${t('leads_btn')}</h2><p class="hint">${t('leads_p')}</p>${body}<button type="button" class="btn ghost wide" id="leadsBack" style="margin-top:14px">${t('prev')}</button>`;
+}
+async function openLeads(cardId) {
+  MINE.leads = { cardId, loading: true }; render();
+  const col = fb().db.collection('autocards').doc(cardId).collection('leads');
+  try { const qs = await col.get(); MINE.leads = { cardId, list: qs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.at || 0) - (a.at || 0)) }; }
+  catch (e) { MINE.leads = { cardId, error: e.message || e.code }; }
+  render();
+}
+async function delLead(id) {
+  if (!confirm(t('leads_del_q'))) return;
+  try { await fb().db.collection('autocards').doc(MINE.leads.cardId).collection('leads').doc(id).delete(); MINE.leads.list = MINE.leads.list.filter(x => x.id !== id); render(); }
+  catch (e) { toast(t('mine_fail', { m: e.message || e.code })); }
 }
 async function openMine() {
   let user; try { user = await signIn('mine'); } catch (e) { toast(t('login_fail', { m: e.message || e.code })); return; }
@@ -1220,9 +1251,10 @@ async function saveEdit() {
   if (err) err.textContent = '';
   try {
     const user = await signIn('edit'); if (!user) return;
+    const og = await uploadOg(user, S.cardId);
     const images = await uploadImages(user, S.cardId, m => { if ($('saveBtn')) $('saveBtn').innerHTML = spin + m; });
     const d = cardData(); delete d.langs; delete d.price;   // 결제와 연결된 항목은 규칙상 못 바꿈
-    await fb().db.collection('autocards').doc(S.cardId).update({ ...d, images, updatedAt: Date.now() });
+    await fb().db.collection('autocards').doc(S.cardId).update({ ...d, images, ...(og ? { og } : {}), updatedAt: Date.now() });
     try { localStorage.removeItem(EDIT_KEY); } catch (e) {}
     S = loadDraft(); toast(t('saved'));
     openMine();
@@ -1276,6 +1308,67 @@ async function publishFree() {
   }
 }
 
+// ===================================================================
+// 카톡 미리보기 이미지(OG) — 비즈홈과 같은 모양: 1200×630, 왼쪽 인물 + 오른쪽 QR
+// 왜: 링크를 카톡에 붙였을 때 누구 명함인지 보여야 눌린다. 발행·수정할 때마다 명함 색으로 새로 그려 Storage에 올리고,
+//     공유 주소(Worker /c/{id})가 이 이미지를 og:image로 내보낸다. 실패해도 발행은 그대로 진행(미리보기만 기본 이미지).
+// ===================================================================
+function ogQr(text) {   // qrcodejs → 캔버스
+  const box = document.createElement('div');
+  new QRCode(box, { text, width: 380, height: 380, correctLevel: QRCode.CorrectLevel.M });
+  return box.querySelector('canvas');
+}
+function ogFit(ctx, text, maxW, size, weight = 800) {   // 칸에 들어갈 때까지 글자를 줄임
+  do { ctx.font = `${weight} ${size}px 'Noto Sans KR', system-ui, sans-serif`; size -= 2; } while (ctx.measureText(text).width > maxW && size > 18);
+}
+async function makeOg(cardId) {
+  const W_ = 1200, H_ = 630, half = W_ / 2;
+  const card = cardData(), lang = card.langs.includes('ko') ? 'ko' : card.langs[0], v = acView(card, lang);
+  const p = acPalette({ ...card.design });
+  const cv = document.createElement('canvas'); cv.width = W_; cv.height = H_;
+  const x = cv.getContext('2d');
+  try { await Promise.all([document.fonts.load("800 60px 'Noto Sans KR'", v.name), document.fonts.load("500 28px 'Noto Sans KR'", acRole(v))]); } catch (e) {}
+  x.fillStyle = p.main; x.fillRect(0, 0, W_, H_);
+  let photo = null;
+  if (v.profile) {   // 이미 올린 사진은 Worker(/img)를 거쳐야 캔버스에서 읽을 수 있음(다른 주소 그림은 브라우저가 내보내기를 막음)
+    try { photo = await new Promise((ok, no) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = no;
+      i.src = v.profile.startsWith('data:') ? v.profile : AC_WORKER + '/img?u=' + encodeURIComponent(v.profile); }); } catch (e) { photo = null; }
+  }
+  const role = acRole(v).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  if (photo) {
+    // 왼쪽 절반을 꽉 채우되 위쪽 기준(얼굴이 잘리지 않게)
+    const sc = Math.max(half / photo.width, H_ / photo.height), sw = half / sc, sh = H_ / sc;
+    x.drawImage(photo, (photo.width - sw) / 2, 0, sw, sh, 0, 0, half, H_);
+    const g = x.createLinearGradient(0, H_ - 260, 0, H_); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.82)');
+    x.fillStyle = g; x.fillRect(0, H_ - 260, half, 260);
+    x.fillStyle = '#fff'; ogFit(x, v.name, half - 88, 56); x.fillText(v.name, 44, H_ - 96);
+    if (role) { x.fillStyle = 'rgba(255,255,255,.88)'; ogFit(x, role, half - 88, 26, 500); x.fillText(role, 46, H_ - 50); }
+  } else {
+    // 사진 없는 명함(무료판): 왼쪽은 종이 명함처럼 이름을 크게
+    x.fillStyle = p.sub; x.fillRect(0, 0, half, H_);
+    const ink = acTextOn(p.sub);
+    x.fillStyle = acAccentOn(p.point, p.sub); x.fillRect(64, 196, 56, 6);
+    x.fillStyle = ink; ogFit(x, v.name, half - 128, 76); x.fillText(v.name, 64, 300);
+    if (role) { ogFit(x, role, half - 128, 30, 500); x.globalAlpha = .8; x.fillText(role, 64, 356); x.globalAlpha = 1; }
+    if (v.slogan) { ogFit(x, v.slogan, half - 128, 26, 500); x.globalAlpha = .65; x.fillText(v.slogan, 64, 420); x.globalAlpha = 1; }
+  }
+  x.fillStyle = p.point; x.fillRect(half - 3, 0, 6, H_);
+  // 오른쪽: 흰 카드 위 QR
+  const cs = 440, cx = half + (half - cs) / 2, cy = (H_ - cs) / 2 - 28;
+  x.fillStyle = '#fff'; x.beginPath(); x.roundRect(cx, cy, cs, cs, 24); x.fill();
+  x.imageSmoothingEnabled = false; x.drawImage(ogQr(acCardUrl(cardId)), cx + 30, cy + 30, 380, 380); x.imageSmoothingEnabled = true;
+  x.fillStyle = p.onMain; x.textAlign = 'center'; x.font = "700 26px 'Noto Sans KR', system-ui, sans-serif";
+  x.fillText(t('og_qr'), half + half / 2, cy + cs + 54); x.textAlign = 'left';
+  return cv.toDataURL('image/jpeg', 0.88);
+}
+async function uploadOg(user, cardId) {
+  try {
+    const url = await makeOg(cardId);
+    const snap = await fb().storage.ref(`autocards/${user.uid}/${cardId}/og.jpg`).putString(url, 'data_url', { contentType: 'image/jpeg', cacheControl: 'public,max-age=3600' });
+    return await snap.ref.getDownloadURL();
+  } catch (e) { console.warn('og', e); return ''; }
+}
+
 // 새로 고른 사진(data: URL)만 Storage에 올리고 주소로 바꿈 — autocards/{내 uid}/{명함 id}/
 async function uploadImages(user, cardId, progress) {
   const { storage } = fb(), images = { ...S.images };
@@ -1314,12 +1407,15 @@ async function doPublish(user, progress, status = 'draft') {
   await ref.set({ ownerUid: user.uid, ownerEmail: user.email, status: 'draft', createdAt: S.createdAt, updatedAt: now }, { merge: true });
   S.cardId = ref.id; save();
 
+  const og = await uploadOg(user, ref.id);   // 사진을 올리기 전에(방금 고른 사진을 그대로 쓰려고)
   const images = await uploadImages(user, ref.id, progress);
 
   progress(t('pg_send'));
   const data = { ...cardData(), images, ownerUid: user.uid, ownerEmail: user.email, status, createdAt: S.createdAt, updatedAt: Date.now() };
   if (status === 'published') Object.assign(data, { publishedAt: Date.now(), approvedBy: user.email });
   if (S.ref) data.referredBy = S.ref;
+  if (S.via) data.via = S.via;
+  if (og) data.og = og;
   await ref.set(data);
   S.status = status; save();
 }
